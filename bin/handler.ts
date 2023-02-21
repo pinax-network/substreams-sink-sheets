@@ -8,8 +8,7 @@ export function handleOperation(operation: TableChange, clock: Clock) {
     const timestamp = seconds * 1000 + ms
     const date = new Date(timestamp)
 
-    // base columns
-    const base = {
+    const row = {
         date: date.toISOString(),
         year: date.getUTCFullYear(),
         month: date.getUTCMonth(),
@@ -18,17 +17,32 @@ export function handleOperation(operation: TableChange, clock: Clock) {
         seconds,
         block_number: clock.number,
         table: operation.table,
+        pk: operation.pk,
+        ordinal: operation.ordinal,
         operation: operation.operation,
     } as any
 
-    console.log(`New data: ${JSON.stringify(base)}`)
+    if (operation.operation === Operation.CREATE || operation.operation === Operation.DELETE) {
+        for (const field of operation.fields) {
+            row[field.name] = field.newValue
+        }        
+    } else if (operation.operation === Operation.UPDATE) {
+        for (const field of operation.fields) {
+            row[field.name] = {new: field.newValue, old: field.oldValue}
+        }
+    } else {
+        console.error(`Unsupported operation: ${JSON.stringify(row)}`)
+        return
+    }
+
+    console.log(`${operation.operation} row: ${JSON.stringify(row)}`)
 }
 
 enum Operation {
-    UNSET = 0,
-    CREATE = 1,
-    UPDATE = 2,
-    DELETE = 3,
+    UNSET = 'UNSET',
+    CREATE = 'CREATE',
+    UPDATE = 'UPDATE',
+    DELETE = 'DELETE',
 }
 
 interface TableChange {
@@ -41,6 +55,6 @@ interface TableChange {
 
 interface Field {
     name: string;
-    new_value: string;
-    old_value: string;
+    newValue: string;
+    oldValue: string;
 }
