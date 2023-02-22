@@ -135,5 +135,5 @@ dist
 # Local scripts
 *.sh
 
-# Output binaries
-dist-bin/
+# Google Sheets
+credentials.json

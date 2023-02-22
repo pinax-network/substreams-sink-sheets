@@ -15,7 +15,7 @@ export function handleOperation(operation: TableChange, clock: Clock) {
         day: date.getUTCDay(),
         timestamp,
         seconds,
-        block_number: clock.number,
+        blockNumber: clock.number,
         table: operation.table,
         pk: operation.pk,
         ordinal: operation.ordinal,
@@ -36,6 +36,7 @@ export function handleOperation(operation: TableChange, clock: Clock) {
     }
 
     console.log(`${operation.operation} row: ${JSON.stringify(row)}`)
+    return row
 }
 
 enum Operation {
