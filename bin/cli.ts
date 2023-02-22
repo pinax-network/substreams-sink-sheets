@@ -10,7 +10,7 @@ program.name('substreams-sink-sheets')
     .version(pkg.version, '-v, --version', 'version for substreams-sink-sheets')
 
 program.command('run')
-    .description('Pushes data from a substreams Wintston logger map output to a Google Sheets spreadsheet')
+    .description('Pushes data from a Substreams DatabaseChanges map output to a Google Sheets spreadsheet')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .argument('<sheet-id>', 'ID of Google Sheets spreadsheet to write output to (i.e. https://docs.google.com/spreadsheets/d/{ID}/edit)')
     .option('-m --output-module <string>', 'Name of the output module (declared in the manifest)', 'db_out')
