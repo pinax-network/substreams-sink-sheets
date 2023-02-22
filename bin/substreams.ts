@@ -15,8 +15,10 @@ const sheets = google.sheets({version: 'v4', auth})
 
 export async function appendToSheet(sheetId: string, rows: any[]) {
     const values = []
-    for ( const row of rows ) {
-        values.push(Object.keys(row).map(key => row[key]))
+    for ( let row of rows ) {
+        // Filter out null values from the row, taken from https://stackoverflow.com/a/38340730
+        row = Object.fromEntries(Object.entries(row).filter(([, v]) => v != null))
+        values.push(Object.keys(row).map(key => row[key] != null && row[key]))
     }
 
     const request = {
@@ -79,7 +81,7 @@ export async function run(spkg: string, sheetId: string, args: {
             rows.push(handleOperation(operation.toJson(), clock))
         }
 
-        appendToSheet(sheetId, rows)
+        appendToSheet(sheetId, rows) // TODO: Check for error and notify/retry on error
     })
 
     // start streaming Substream
