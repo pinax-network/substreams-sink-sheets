@@ -11,13 +11,7 @@
     ],
     "license": "MIT OR Apache-2.0",
     "repository": "git@github.com:pinax-network/substreams-sink-sheets.git",
-    "keywords": [
-        "substreams",
-        "streamingfast",
-        "firehose",
-        "thegraph",
-        "pinax"
-    ],
+    "keywords": ["substreams", "streamingfast", "firehose", "thegraph", "pinax"],
     "author": {"name": "Krow10","email": "23462475+Krow10@users.noreply.github.com"},
     "contributors": [
         { "name": "Denis", "email": "denis@pinax.network"}
