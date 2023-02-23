@@ -22,7 +22,6 @@
     },
     "dependencies": {
         "commander": "10.x",
-        "dotenv": "16.x",
         "googleapis": "111.x",
         "substreams": "0.3.x"
     },
