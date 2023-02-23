@@ -39,6 +39,24 @@ export async function appendToSheet(spreadsheetId: string, rows: any[]) {
     }
 }
 
+export async function createSpreadsheet(title: string) {
+    const requestBody = {
+        properties: {
+            title,
+        },
+    }
+
+    try {
+        return (await sheets.spreadsheets.create({
+            requestBody,
+            fields: 'spreadsheetId',
+        })).data.spreadsheetId
+    } catch (err) {
+        console.error(err)
+        throw err
+    }
+}
+
 async function readRange(spreadsheetId: string, range: string) {
     const request = {
         spreadsheetId,
@@ -70,7 +88,6 @@ export async function writeHeaderRow(spreadsheetId: string, columns: any) {
     try {
         const response = (await sheets.spreadsheets.values.append(request)).data
         console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
-        console.log(`[+] Wrote headers "${columns}" to "${response?.spreadsheetId}"`)
         return response
     } catch (err) {
         console.error(err)

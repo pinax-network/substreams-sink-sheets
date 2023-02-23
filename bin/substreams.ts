@@ -1,8 +1,9 @@
 import { Substreams, download } from 'substreams'
 import { handleDecoded } from './handler'
-import { authenticate, hasHeaderRow, writeHeaderRow } from './google'
+import { authenticate, createSpreadsheet, hasHeaderRow, writeHeaderRow } from './google'
 
-export async function run(spkg: string, spreadsheetId: string, credentials: string, args: {
+export async function run(spkg: string, credentials: string, args: {
+    spreadsheetId?: string,
     outputModule?: string,
     startBlock?: string,
     stopBlock?: string,
@@ -12,10 +13,24 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
 } = {}) {
     authenticate(credentials)
 
+    let spreadsheetId = args.spreadsheetId ?? ''
+
+    if ( !spreadsheetId ) {
+        // Will not work with service accounts, need to test with OAuth
+        spreadsheetId = await createSpreadsheet('substreams-sink-sheets by Pinax') ?? ''
+        if ( !spreadsheetId ) {
+            console.error('[-] Could not create new spreadsheet !')
+            return
+        } else {
+            console.log(`[+] Created new spreadsheet: https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`)
+        }
+    }
+
     const columns = args.columns ?? []
 
     if ( columns.length > 0 && ! await hasHeaderRow(spreadsheetId) ){
         await writeHeaderRow(spreadsheetId, columns)
+        console.log(`[+] Wrote headers "${columns}" to "${spreadsheetId}"`)
     }
 
     // User params
