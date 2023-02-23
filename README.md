@@ -7,6 +7,7 @@
   - [x] Load URL or IPFS
   - [ ] Read from `*.spkg` local filesystem
   - [ ] Read from `substreams.yaml`
+* [x] List compatible modules from `.spkg`
 - GoogleSheet API support
   - [x] Authenticate via JWT credentials
   - [x] Append row to sheet
@@ -16,9 +17,6 @@
   - [ ] Time (`date,year,month,day,timestamp,seconds`)
   - [ ] Block (`block_num`)
   - [x] `DatabaseChanges`
-  - [ ] Read output fields from `.spkg`
-      - If specified from CLI, great ! (warn if some not found in .spkg)
-      - If not, allow user to select some or all via terminal
   - [ ] Add missing columns headers to sheet if not present
 - [ ] Create a new sheet if no `spreadsheetId` specified
 - [x] Set `start-block` & `end-block`

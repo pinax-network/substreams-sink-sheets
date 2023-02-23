@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import { Substreams, download } from 'substreams'
 import { handleDecoded } from './handler'
 import { authenticate } from './google'
@@ -38,4 +39,11 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
 
     // start streaming Substream
     await substreams.start(modules)
+}
+
+export async function list(spkg: string) {
+    const { modules, } = await download(spkg)
+    const messageTypeName = 'sf.substreams.sink.database.v1.DatabaseChanges'
+
+    console.log(`Compatible modules: ${modules.modules.filter(x => x?.output?.type == `proto:${messageTypeName}`).map(v => v.name)}`)
 }
