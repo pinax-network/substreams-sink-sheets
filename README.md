@@ -17,8 +17,8 @@
   - [ ] Time (`date,year,month,day,timestamp,seconds`)
   - [ ] Block (`block_num`)
   - [x] `DatabaseChanges`
-  - [ ] Add missing columns headers to sheet if not present
-- [ ] Create a new sheet if no `spreadsheetId` specified
+  - [x] Add missing columns headers to sheet if not present
+- [x] Create a new sheet if no `spreadsheetId` specified
 - [x] Set `start-block` & `end-block`
 - [x] Select `outputModule` (default `db_out`)
 - [x] Select Substream endpoint (default `mainnet.eth.streamingfast.io:443`)

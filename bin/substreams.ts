@@ -16,7 +16,7 @@ export async function run(spkg: string, credentials: string, args: {
     let spreadsheetId = args.spreadsheetId ?? ''
 
     if ( !spreadsheetId ) {
-        // Will not work with service accounts, need to test with OAuth
+        // NOTE: If service account, user cannot access it... -> Need to switch to OAuth only
         spreadsheetId = await createSpreadsheet('substreams-sink-sheets by Pinax') ?? ''
         if ( !spreadsheetId ) {
             console.error('[-] Could not create new spreadsheet !')
@@ -28,7 +28,7 @@ export async function run(spkg: string, credentials: string, args: {
 
     const columns = args.columns ?? []
 
-    if ( columns.length > 0 && ! await hasHeaderRow(spreadsheetId) ){
+    if ( args.addHeaderRow && columns.length > 0 && ! await hasHeaderRow(spreadsheetId) ){
         await writeHeaderRow(spreadsheetId, columns)
         console.log(`[+] Wrote headers "${columns}" to "${spreadsheetId}"`)
     }
