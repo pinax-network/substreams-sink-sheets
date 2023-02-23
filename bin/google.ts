@@ -1,12 +1,7 @@
+import * as fs from 'fs'
 import { google } from 'googleapis'
 
-// Google Sheets API
-const auth = new google.auth.JWT({
-    email: process.env.SERVICE_ACCOUNT_EMAIL,
-    key: process.env.SERVICE_ACCOUNT_PRIVATE_KEY,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
-})
-const sheets = google.sheets({version: 'v4', auth})
+let sheets = google.sheets('v4')
 
 // TODO: Check for error and notify/retry on error
 export async function appendToSheet(spreadsheetId: string, rows: any[]) {
@@ -37,7 +32,20 @@ export async function appendToSheet(spreadsheetId: string, rows: any[]) {
     try {
         const response = (await sheets.spreadsheets.values.append(request)).data
         console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
+        console.log(`[+] Added ${response?.updates?.updatedRows} rows to "${response?.spreadsheetId}"`)
     } catch (err) {
         console.error(err)
     }
+}
+
+// TODO: Check for errors
+export function authenticate(credentials: string) {
+    const creds = JSON.parse(fs.readFileSync(credentials, 'utf-8'))
+    const auth = new google.auth.JWT({
+        email: creds?.client_email,
+        key: creds?.private_key,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    })
+
+    sheets = google.sheets({version: 'v4', auth})
 }

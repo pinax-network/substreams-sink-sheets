@@ -1,12 +1,15 @@
 import { Substreams, download } from 'substreams'
 import { handleDecoded } from './handler'
+import { authenticate } from './google'
 
-export async function run(spkg: string, spreadsheetId: string, args: {
+export async function run(spkg: string, spreadsheetId: string, credentials: string, args: {
     outputModule?: string,
     startBlock?: string,
     stopBlock?: string,
     substreamsEndpoint?: string,
 } = {}) {
+    authenticate(credentials)
+
     // User params
     const messageTypeName = 'sf.substreams.sink.database.v1.DatabaseChanges'
     if ( !args.outputModule ) throw new Error('[outputModule] is required')
@@ -29,8 +32,8 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     substreams.on('mapOutput', (output, clock) => {
         // Handle map operations
         if (!output.data.mapOutput.typeUrl.match(messageTypeName)) return
-        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any;
-        handleDecoded(decoded, clock, spreadsheetId);
+        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any
+        handleDecoded(decoded, clock, spreadsheetId)
     })
 
     // start streaming Substream
