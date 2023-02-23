@@ -7,9 +7,9 @@ let sheets = google.sheets('v4')
 export async function appendToSheet(spreadsheetId: string, rows: any[]) {
     const values = []
     for ( let row of rows ) {
-        // Filter out null values from the row, taken from https://stackoverflow.com/a/38340730
+        // Filter out null values from the row (taken from https://stackoverflow.com/a/38340730) and convert to String
         row = Object.fromEntries(Object.entries(row).filter(([, v]) => v != null))
-        values.push(Object.keys(row).map(key => row[key] != null && row[key]))
+        values.push(Object.keys(row).map(key => row[key] != null && String(row[key])))
     }
 
     const request = {

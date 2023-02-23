@@ -2,10 +2,6 @@ import { Clock } from 'substreams'
 import { appendToSheet } from './google'
 import { DatabaseChanges, TableChange, Operation } from './interfaces'
 
-(BigInt.prototype as any).toJSON = function () {
-    return this.toString()
-}
-
 export function handleDecoded(decoded: DatabaseChanges, clock: Clock, spreadsheetId: string) {
     const rows: any[] = []
     for ( const operation of decoded.tableChanges ) {
