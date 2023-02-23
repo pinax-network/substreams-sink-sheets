@@ -2,7 +2,7 @@ import { Clock } from 'substreams'
 import { appendToSheet } from './google'
 import { DatabaseChanges, TableChange, Operation } from './interfaces'
 
-export function handleDecoded(decoded: DatabaseChanges, clock: Clock, spreadsheetId: string) {
+export function handleDecoded(decoded: DatabaseChanges, clock: Clock, spreadsheetId: string, columns: string[]) {
     const rows: any[] = []
     for ( const operation of decoded.tableChanges ) {
         // handle clock timestamp
@@ -24,7 +24,6 @@ export function handleDecoded(decoded: DatabaseChanges, clock: Clock, spreadshee
             day,
             timestamp,
             seconds,
-            block_num: clock.number,
             block_number: clock.number,
             table: operation.table,
             pk: operation.pk,
@@ -33,14 +32,19 @@ export function handleDecoded(decoded: DatabaseChanges, clock: Clock, spreadshee
         } as any
 
         // extracted json from `db_out` map output (will be override base data)
-        const json = table_changes_to_json(operation)
-        rows.push(Object.assign(base, json))
+        const json = table_changes_to_json(operation, columns)
+        const merged = Object.assign(base, json)
+        if ( Array.isArray(columns) && columns.length > 0 ) {
+            rows.push(columns.reduce((acc: any, key: string) => (acc[key] = merged[key], acc), {}))
+        } else {
+            rows.push(merged)
+        }
     }
 
     appendToSheet(spreadsheetId, rows)
 }
 
-function table_changes_to_json(operation: TableChange) {
+function table_changes_to_json(operation: TableChange, columns: string[]) {
     const json: any = {}
     for ( const { name, newValue } of operation.fields ) {
         json[name] = newValue

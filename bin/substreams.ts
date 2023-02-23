@@ -1,4 +1,3 @@
-import * as fs from 'fs'
 import { Substreams, download } from 'substreams'
 import { handleDecoded } from './handler'
 import { authenticate } from './google'
@@ -8,8 +7,12 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
     startBlock?: string,
     stopBlock?: string,
     substreamsEndpoint?: string,
+    columns?: string[],
+    addHeaderRow?: boolean
 } = {}) {
     authenticate(credentials)
+
+    const columns = args.columns ?? []
 
     // User params
     const messageTypeName = 'sf.substreams.sink.database.v1.DatabaseChanges'
@@ -28,13 +31,13 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
 
     // Find Protobuf message types from registry
     const DatabaseChanges = registry.findMessage(messageTypeName)
-    if (!DatabaseChanges) throw new Error(`Could not find [${messageTypeName}] message type`)
+    if ( !DatabaseChanges ) throw new Error(`Could not find [${messageTypeName}] message type`)
 
     substreams.on('mapOutput', (output, clock) => {
         // Handle map operations
-        if (!output.data.mapOutput.typeUrl.match(messageTypeName)) return
-        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any
-        handleDecoded(decoded, clock, spreadsheetId)
+        if ( !output.data.mapOutput.typeUrl.match(messageTypeName) ) return
+        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
+        handleDecoded(decoded, clock, spreadsheetId, columns)
     })
 
     // start streaming Substream
