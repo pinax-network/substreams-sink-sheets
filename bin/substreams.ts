@@ -1,52 +1,7 @@
 import { Substreams, download } from 'substreams'
-import { handleOperation } from './handler'
-import { google } from 'googleapis'
-import * as dotenv from 'dotenv'
+import { handleDecoded } from './handler'
 
-dotenv.config()
-
-// Google Sheets API
-const auth = new google.auth.JWT({
-    email: process.env.SERVICE_ACCOUNT_EMAIL,
-    key: process.env.SERVICE_ACCOUNT_PRIVATE_KEY,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
-})
-const sheets = google.sheets({version: 'v4', auth})
-
-export async function appendToSheet(sheetId: string, rows: any[]) {
-    const values = []
-    for ( let row of rows ) {
-        // Filter out null values from the row, taken from https://stackoverflow.com/a/38340730
-        row = Object.fromEntries(Object.entries(row).filter(([, v]) => v != null))
-        values.push(Object.keys(row).map(key => row[key] != null && row[key]))
-    }
-
-    const request = {
-        spreadsheetId: sheetId,
-
-        // See https://developers.google.com/sheets/api/guides/concepts#cell
-        range: 'Sheet1',
-
-        // See https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
-        valueInputOption: 'RAW',
-
-        // See https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append#insertdataoption
-        insertDataOption: 'INSERT_ROWS',
-
-        resource: {
-            values
-        },
-    }
-
-    try {
-        const response = (await sheets.spreadsheets.values.append(request)).data
-        console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
-    } catch (err) {
-        console.error(err)
-    }
-}
-
-export async function run(spkg: string, sheetId: string, args: {
+export async function run(spkg: string, spreadsheetId: string, args: {
     outputModule?: string,
     startBlock?: string,
     stopBlock?: string,
@@ -74,14 +29,8 @@ export async function run(spkg: string, sheetId: string, args: {
     substreams.on('mapOutput', (output, clock) => {
         // Handle map operations
         if (!output.data.mapOutput.typeUrl.match(messageTypeName)) return
-        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value)
-        
-        const rows: any[] = []
-        for ( const operation of decoded.tableChanges ) {
-            rows.push(handleOperation(operation.toJson(), clock))
-        }
-
-        appendToSheet(sheetId, rows) // TODO: Check for error and notify/retry on error
+        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any;
+        handleDecoded(decoded, clock, spreadsheetId);
     })
 
     // start streaming Substream
