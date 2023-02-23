@@ -1,6 +1,6 @@
 import { Substreams, download } from 'substreams'
 import { handleDecoded } from './handler'
-import { authenticate } from './google'
+import { authenticate, hasHeaderRow, writeHeaderRow } from './google'
 
 export async function run(spkg: string, spreadsheetId: string, credentials: string, args: {
     outputModule?: string,
@@ -13,6 +13,10 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
     authenticate(credentials)
 
     const columns = args.columns ?? []
+
+    if ( columns.length > 0 && ! await hasHeaderRow(spreadsheetId) ){
+        await writeHeaderRow(spreadsheetId, columns)
+    }
 
     // User params
     const messageTypeName = 'sf.substreams.sink.database.v1.DatabaseChanges'
