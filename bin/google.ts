@@ -33,6 +33,45 @@ export async function appendToSheet(spreadsheetId: string, rows: any[]) {
         const response = (await sheets.spreadsheets.values.append(request)).data
         console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
         console.log(`[+] Added ${response?.updates?.updatedRows} rows to "${response?.spreadsheetId}"`)
+        return response
+    } catch (err) {
+        console.error(err)
+    }
+}
+
+async function readRange(spreadsheetId: string, range: string) {
+    const request = {
+        spreadsheetId,
+        range,
+    }
+
+    try {
+        return (await sheets.spreadsheets.values.get(request)).data
+    } catch (err) {
+        console.error(err)
+    }
+}
+
+export async function hasHeaderRow(spreadsheetId: string) {
+    return (await readRange(spreadsheetId, 'Sheet1!1:1'))?.values !== undefined
+}
+
+export async function writeHeaderRow(spreadsheetId: string, columns: any) {
+    const request = {
+        spreadsheetId,
+        range: 'Sheet1!1:1',
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        resource: {
+            values: [columns]
+        }
+    }
+
+    try {
+        const response = (await sheets.spreadsheets.values.append(request)).data
+        console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
+        console.log(`[+] Wrote headers "${columns}" to "${response?.spreadsheetId}"`)
+        return response
     } catch (err) {
         console.error(err)
     }
