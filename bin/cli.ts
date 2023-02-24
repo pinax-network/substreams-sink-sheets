@@ -14,6 +14,7 @@ program.name('substreams-sink-sheets')
     .version(pkg.version, '-v, --version', 'version for substreams-sink-sheets')
 
 program.command('run')
+    .showHelpAfterError()
     .description('Push data from a Substreams DatabaseChanges map output to a Google Sheets spreadsheet')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .argument('<spreadsheet-id>', 'ID of Google Sheets spreadsheet to write output to (i.e. https://docs.google.com/spreadsheets/d/{ID}/edit)')
@@ -28,15 +29,18 @@ program.command('run')
     .action(run)
 
 program.command('list')
+    .showHelpAfterError()
     .description('List all compatible output modules for a given Substreams package')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .action(list)
 
 program.command('create')
+    .showHelpAfterError()
     .description('Create a new Google Sheets spreadsheet and return the ID')
     .option('-c --credentials-file <string>', 'JSON filepath containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', 'credentials.json')
     .action(create)
 
 program.command('completion').description('Generate the autocompletion script for the specified shell')
 program.command('help').description('Display help for command')
+program.showHelpAfterError();
 program.parse()
