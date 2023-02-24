@@ -23,3 +23,6 @@ credentials.json
 *-linux
 *-macos
 *-win.exe
+
+# ESLint
+.eslintrc.json

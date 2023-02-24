@@ -27,23 +27,25 @@ export interface Field {
 
 export function parseDatabaseChanges(decoded: DatabaseChanges, clock: Clock) {
     const tableChanges: any[] = []
+
     for ( const { table, pk, ordinal, operation, fields } of decoded.tableChanges ) {
         // only supports CREATE
         if ( operation != Operation.CREATE ) continue
 
         // extractable JSON data
-        const base_json = { table, pk, ordinal: String(ordinal), operation: operation };
-        const fields_json = fields_to_json(fields);
-        const clock_json = clock_to_json(clock);
+        const base_json = { table, pk, ordinal: String(ordinal), operation: operation }
+        const fields_json = fields_to_json(fields)
+        const clock_json = clock_to_json(clock)
 
         // merge & push all JSON data
-        tableChanges.push(Object.assign(base_json, clock_json, fields_json));
+        tableChanges.push(Object.assign(base_json, clock_json, fields_json))
     }
-    return tableChanges;
+
+    return tableChanges
 }
 
 function clock_to_json(clock: Clock) {
-    const block_number = clock.number;
+    const block_number = clock.number
     const seconds = Number(clock.timestamp?.seconds)
     const nanos = Number(clock.timestamp?.nanos)
     const ms = nanos / 1000000
@@ -61,14 +63,16 @@ function clock_to_json(clock: Clock) {
         seconds,
         block_number,
         block_num: block_number,
-    };
+    }
 }
 
 function fields_to_json(fields: Field[]) {
     const json: any = {}
+
     for ( const { name, newValue } of fields ) {
-        if ( newValue == undefined ) continue; // skip if empty
-        json[name] = String(newValue);
+        if ( newValue == undefined ) continue // skip if empty
+        json[name] = String(newValue)
     }
+
     return json
 }

@@ -2,17 +2,16 @@ import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, format_row, hasHeaderRow, insertRows } from './src/google'
 import { authenticate, parseCredentials } from './src/auth'
-import { readFileSync } from "./src/utils"
-import { logger } from "./src/logger";
+import { readFileSync } from './src/utils'
+import { logger } from './src/logger'
 
-export * from "./src/google";
-export * from "./src/database_changes";
-export * from "./src/auth";
+export * from './src/google'
+export * from './src/database_changes'
+export * from './src/auth'
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
 
-export async function run(spkg: string, args: {
-    spreadsheetId?: string,
+export async function run(spkg: string, spreadsheetId: string, args: {
     outputModule?: string,
     startBlock?: string,
     stopBlock?: string,
@@ -23,26 +22,25 @@ export async function run(spkg: string, args: {
     credentialsFile?: string, // filepath of Google Credentials
 } = {}) {
     // User params
-    const columns = args.columns ?? [];
-    let spreadsheetId = args.spreadsheetId || '';
-    const range = args.range;
-    
+    const columns = args.columns ?? []
+    const range = args.range
+
     if ( !range ) throw new Error('[range] is required')
     if ( !args.outputModule ) throw new Error('[outputModule] is required')
-    if ( !columns.length ) throw new Error('[columns] is empty');
+    if ( !columns.length ) throw new Error('[columns] is empty')
     if ( !args.credentialsFile ) throw new Error('[credentialsFile] is required')
     if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
     
     // Authenticate Google Sheets
-    const credentials = parseCredentials(readFileSync(args.credentialsFile));
-    const sheets = await authenticate(credentials);
-    logger.info("authenticate", {client_email: credentials.client_email});
+    const credentials = parseCredentials(readFileSync(args.credentialsFile))
+    const sheets = await authenticate(credentials)
+    logger.info('authenticate', {client_email: credentials.client_email})
     
     // Add header row if not exists
     if ( args.addHeaderRow ) {
         if ( !await hasHeaderRow(sheets, spreadsheetId, range) ) {
-            await insertRows(sheets, spreadsheetId, range, [columns]);
-            logger.info("addHeaderRow", {columns, spreadsheetId});
+            await insertRows(sheets, spreadsheetId, range, [columns])
+            logger.info('addHeaderRow', {columns, spreadsheetId})
         }
     }
 
@@ -65,31 +63,34 @@ export async function run(spkg: string, args: {
         // Handle map operations
         if ( !output.data.mapOutput.typeUrl.match(MESSAGE_TYPE_NAME) ) return
         const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
-        const databaseChanges = parseDatabaseChanges(decoded, clock);
-        const rows = databaseChanges.map(changes => format_row(changes, columns));
-        await insertRows(sheets, spreadsheetId, range, rows);
-        logger.info("insertRows", {spreadsheetId, range, rows: rows.length});
+        const databaseChanges = parseDatabaseChanges(decoded, clock)
+        const rows = databaseChanges.map(changes => format_row(changes, columns))
+        await insertRows(sheets, spreadsheetId, range, rows)
+        logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
     })
 
     // start streaming Substream
-    logger.info("start", {
+    logger.info('start', {
         host: args.substreamsEndpoint,
         outputModule: args.outputModule,
         startBlockNum: args.startBlock,
         stopBlockNum: args.stopBlock,
-    });
+    })
+
     await substreams.start(modules)
 }
 
 export async function list(spkg: string) {
-    let { modules } = await download(spkg);
-    const compatible = [];
+    const { modules } = await download(spkg)
+    const compatible = []
+
     for ( const module of modules.modules ) {
-        if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue;
-        compatible.push(module.name);
+        if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue
+        compatible.push(module.name)
     }
-    logger.info('list', {modules: compatible});
-    process.stdout.write(JSON.stringify(compatible));
+
+    logger.info('list', {modules: compatible})
+    process.stdout.write(JSON.stringify(compatible))
     // return compatible;
 }
 
@@ -99,15 +100,15 @@ export async function create(args: {
     if ( !args.credentialsFile ) throw new Error('[credentialsFile] is required')
 
     // Authenticate Google Sheets
-    const credentials = parseCredentials(readFileSync(args.credentialsFile));
-    const sheets = await authenticate(credentials);
+    const credentials = parseCredentials(readFileSync(args.credentialsFile))
+    const sheets = await authenticate(credentials)
 
     // Create spreadsheet
-    const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax');
-    if ( !spreadsheetId ) throw new Error('Could not create spreadsheet');
+    const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax')
+    if ( !spreadsheetId ) throw new Error('Could not create spreadsheet')
 
     // Log spreadsheetId
-    logger.info('create', {spreadsheetId});
-    process.stdout.write(spreadsheetId);
+    logger.info('create', {spreadsheetId})
+    process.stdout.write(spreadsheetId)
     // return spreadsheetId;
 }

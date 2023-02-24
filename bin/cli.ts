@@ -23,9 +23,9 @@ program.command('run')
     .option('-e --substreams-endpoint <string>', 'Substreams gRPC endpoint', 'eos.firehose.eosnation.io:9001')
     .option('-s --start-block <int>', 'Start block to stream from (defaults to -1, which means the initialBlock of the first module you are streaming)')
     .option('-t --stop-block <string>', 'Stop block to end stream at, inclusively')
-    .option('--columns <items>', 'Output columns filter (comma separated list)', commaSeparatedList,["timestamp", "block_num"])
+    .option('--columns <items>', 'Output columns filter (comma separated list)', commaSeparatedList,['timestamp', 'block_num'])
     .option('--add-header-row <bool>', 'Add the name of the columns to the first row of the spreadsheet ', true)
-    .option('--range <string>', 'The A1 notation of the table range.', "Sheet1")
+    .option('--range <string>', 'The A1 notation of the table range.', 'Sheet1')
     .action(run)
 
 program.command('list')
@@ -42,5 +42,5 @@ program.command('create')
 
 program.command('completion').description('Generate the autocompletion script for the specified shell')
 program.command('help').description('Display help for command')
-program.showHelpAfterError();
+program.showHelpAfterError()
 program.parse()

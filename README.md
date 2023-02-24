@@ -18,13 +18,23 @@
 - [x] Windows
 
 **Install** globally via npm
-```
+```console
 $ npm install -g substreams-sink-sheets
 ```
 
 **Run**
-```
+```console
 $ substreams-sink-sheets run [options] <spkg>
+```
+
+**List compatible modules for a given Substream**
+```console
+$ substreams-sink-sheets list <spkg>
+```
+
+**Help**
+```console
+$ substreams-sink-sheets run -h
 ```
 
 ## Features
@@ -32,7 +42,7 @@ $ substreams-sink-sheets run [options] <spkg>
   - [x] Load URL or IPFS
   - [ ] Read from `*.spkg` local filesystem
   - [ ] Read from `substreams.yaml`
-* [x] List compatible modules from `.spkg`
+- [x] List compatible modules from `.spkg`
 - [GoogleSheet API](https://developers.google.com/sheets/api/reference/rest/) support
   - [x] Authenticate via JWT credentials
   - [x] Append row to sheet
@@ -44,7 +54,7 @@ $ substreams-sink-sheets run [options] <spkg>
   - [x] Time (`date,year,month,day,timestamp,seconds`)
   - [x] Block (`block_num`)
   - [x] `DatabaseChanges`
-  - [x] Add missing columns headers to sheet if not present
+  - [x] Add missing columns headers to sheet if specified
 - [x] Create a new sheet if no `spreadsheetId` specified
 - [x] Set `start-block` & `end-block`
 - [x] Select `outputModule` (default `db_out`)
