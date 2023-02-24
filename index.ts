@@ -1,7 +1,7 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, format_row, hasHeaderRow, insertRows } from './src/google'
-import { authenticate, read_credentials } from './src/auth'
+import { authenticate, Credentials, to_credentials } from './src/auth'
 
 export * from "./src/google";
 export * from "./src/database_changes";
@@ -9,7 +9,7 @@ export * from "./src/auth";
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
 
-export async function run(spkg: string, credentials: string, args: {
+export async function run(spkg: string, args: {
     spreadsheetId?: string,
     outputModule?: string,
     startBlock?: string,
@@ -18,6 +18,7 @@ export async function run(spkg: string, credentials: string, args: {
     columns?: string[],
     addHeaderRow?: boolean,
     range?: string,
+    credentials?: string, // JSON stringify of Google Credentials
 } = {}) {
     // User params
     const columns = args.columns ?? [];
@@ -27,14 +28,11 @@ export async function run(spkg: string, credentials: string, args: {
     if ( !range ) throw new Error('[range] is required')
     if ( !args.outputModule ) throw new Error('[outputModule] is required')
     if ( !columns.length ) throw new Error('[columns] is empty');
-    if ( !credentials ) throw new Error('[credentials] is required')
+    if ( !args.credentials ) throw new Error('[credentials] is required')
+    if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
     
     // Authenticate Google Sheets
-    const sheets = await authenticate(read_credentials(credentials));
-    
-    // NOTE: If service account, user cannot access it... -> Need to switch to OAuth only
-    if ( !spreadsheetId ) spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax');
-    if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
+    const sheets = await authenticate(to_credentials(args.credentials));
     
     // Add header row if not exists
     if ( args.addHeaderRow ) {
@@ -78,4 +76,14 @@ export async function list(spkg: string) {
         if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue;
         console.log(`Compatible modules: ${module.name}`);
     }
+}
+
+export async function create(args: {
+    credentials?: string, // JSON stringify of Google Credentials
+} = {}) {
+    if ( !args.credentials ) throw new Error('[credentials] is required')
+    const sheets = await authenticate(to_credentials(args.credentials));
+    const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax');
+    console.log(spreadsheetId);
+    // return spreadsheetId;
 }
