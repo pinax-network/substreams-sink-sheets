@@ -27,3 +27,12 @@
   - [x] CREATE
   - [ ] UPDATE
   - [ ] DELETE
+- Rate limiting
+  - [x] 1 request per second (Google rate limit is 100 requests per 100 seconds)
+  - [ ] Batch updates
+
+## References
+
+- https://developers.google.com/sheets/api/guides/concepts#cell
+- https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
+- https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append#insertdataoption

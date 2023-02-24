@@ -1,107 +1,59 @@
-import * as fs from 'fs'
-import { google } from 'googleapis'
+import { sheets_v4 } from 'googleapis'
+type Sheets = sheets_v4.Sheets;
+const TIMEOUT = 1000; // rate limit on Google API is 100 requests per 100 seconds
 
-let sheets = google.sheets('v4')
-
-// TODO: Check for error and notify/retry on error
-export async function appendToSheet(spreadsheetId: string, rows: any[]) {
-    const values = []
-    for ( let row of rows ) {
-        // Filter out null values from the row (taken from https://stackoverflow.com/a/38340730) and convert to String
-        row = Object.fromEntries(Object.entries(row).filter(([, v]) => v != null))
-        values.push(Object.keys(row).map(key => row[key] != null && String(row[key])))
-    }
-
-    const request = {
-        spreadsheetId,
-
-        // See https://developers.google.com/sheets/api/guides/concepts#cell
-        range: 'Sheet1',
-
-        // See https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
-        valueInputOption: 'RAW',
-
-        // See https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append#insertdataoption
-        insertDataOption: 'INSERT_ROWS',
-
-        resource: {
-            values
-        },
-    }
-
-    try {
-        const response = (await sheets.spreadsheets.values.append(request)).data
-        console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
-        console.log(`[+] Added ${response?.updates?.updatedRows} rows to "${response?.spreadsheetId}"`)
-        return response
-    } catch (err) {
-        console.error(err)
-    }
-}
-
-export async function createSpreadsheet(title: string) {
-    const requestBody = {
-        properties: {
-            title,
-        },
-    }
-
-    try {
-        return (await sheets.spreadsheets.create({
-            requestBody,
-            fields: 'spreadsheetId',
-        })).data.spreadsheetId
-    } catch (err) {
-        console.error(err)
-        throw err
-    }
-}
-
-async function readRange(spreadsheetId: string, range: string) {
-    const request = {
+export async function readRange(sheets: Sheets, spreadsheetId: string, range: string) {
+    return sheets.spreadsheets.values.get({
         spreadsheetId,
         range,
-    }
+    });
+}
 
+export async function hasHeaderRow(sheets: Sheets, spreadsheetId: string, range: string) {
     try {
-        return (await sheets.spreadsheets.values.get(request)).data
-    } catch (err) {
-        console.error(err)
+        const response = await readRange(sheets, spreadsheetId, range + "!1:1");
+        return response.data.values != undefined;
+    } catch (e) {
+        return false;
     }
 }
 
-export async function hasHeaderRow(spreadsheetId: string) {
-    return (await readRange(spreadsheetId, 'Sheet1!1:1'))?.values !== undefined
+export async function createSpreadsheet(sheets: Sheets, title: string) {
+    const response = await sheets.spreadsheets.create({
+        fields: 'spreadsheetId',
+    }, { body: JSON.stringify({ properties: { title }})});
+    const spreadsheetId = response.data.spreadsheetId;
+
+    if ( !spreadsheetId ) {
+        console.error('[-] Could not create new spreadsheet !');
+        process.exit();
+    } else {
+        console.log(`[+] Created new spreadsheet: https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`)
+    }
+    return spreadsheetId;
 }
 
-export async function writeHeaderRow(spreadsheetId: string, columns: any) {
-    const request = {
+export async function insertRows(sheets: Sheets, spreadsheetId: string, range: string, rows: string[][]) {
+    const response = await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!1:1',
+        range,
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
-        resource: {
-            values: [columns]
-        }
-    }
-
-    try {
-        const response = (await sheets.spreadsheets.values.append(request)).data
-        console.log(`Google Sheets API response: ${JSON.stringify(response, null, 2)}`)
-        return response
-    } catch (err) {
-        console.error(err)
-    }
+    }, {body: JSON.stringify({ values: rows })});
+    await timeout(TIMEOUT);
+    return response;
 }
 
-// TODO: Check for errors
-export function authenticate(credentials: string) {
-    const creds = JSON.parse(fs.readFileSync(credentials, 'utf-8'))
-    const auth = new google.auth.JWT({
-        email: creds?.client_email,
-        key: creds?.private_key,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
-    })
+export function timeout(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    sheets = google.sheets({version: 'v4', auth})
+export function format_row(object: {[key: string]: string}, columns: string[]) {
+    const items = [];
+    for ( const column of columns ) {
+        const item: string = object[column];
+        if ( !item ) items.push(""); // if blank, push empty string
+        else items.push(item);
+    }
+    return items;
 }
