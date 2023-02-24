@@ -36,7 +36,8 @@
     "dependencies": {
         "commander": "10.x",
         "googleapis": "111.x",
-        "substreams": "0.3.x"
+        "substreams": "0.3.x",
+        "winston": "3.x"
     },
     "devDependencies": {
         "pkg": "5.x",

@@ -1,7 +1,9 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, format_row, hasHeaderRow, insertRows } from './src/google'
-import { authenticate, Credentials, to_credentials } from './src/auth'
+import { authenticate, parseCredentials } from './src/auth'
+import { readFileSync } from "./src/utils"
+import { logger } from "./src/logger";
 
 export * from "./src/google";
 export * from "./src/database_changes";
@@ -18,7 +20,7 @@ export async function run(spkg: string, args: {
     columns?: string[],
     addHeaderRow?: boolean,
     range?: string,
-    credentials?: string, // JSON stringify of Google Credentials
+    credentialsFile?: string, // filepath of Google Credentials
 } = {}) {
     // User params
     const columns = args.columns ?? [];
@@ -28,17 +30,19 @@ export async function run(spkg: string, args: {
     if ( !range ) throw new Error('[range] is required')
     if ( !args.outputModule ) throw new Error('[outputModule] is required')
     if ( !columns.length ) throw new Error('[columns] is empty');
-    if ( !args.credentials ) throw new Error('[credentials] is required')
+    if ( !args.credentialsFile ) throw new Error('[credentialsFile] is required')
     if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
     
     // Authenticate Google Sheets
-    const sheets = await authenticate(to_credentials(args.credentials));
+    const credentials = parseCredentials(readFileSync(args.credentialsFile));
+    const sheets = await authenticate(credentials);
+    logger.info("authenticate", {client_email: credentials.client_email});
     
     // Add header row if not exists
     if ( args.addHeaderRow ) {
         if ( !await hasHeaderRow(sheets, spreadsheetId, range) ) {
             await insertRows(sheets, spreadsheetId, range, [columns]);
-            console.log(`[+] Wrote headers "${columns}" to "${spreadsheetId}"`)
+            logger.info("addHeaderRow", {columns, spreadsheetId});
         }
     }
 
@@ -64,26 +68,46 @@ export async function run(spkg: string, args: {
         const databaseChanges = parseDatabaseChanges(decoded, clock);
         const rows = databaseChanges.map(changes => format_row(changes, columns));
         await insertRows(sheets, spreadsheetId, range, rows);
+        logger.info("insertRows", {spreadsheetId, range, rows: rows.length});
     })
 
     // start streaming Substream
+    logger.info("start", {
+        host: args.substreamsEndpoint,
+        outputModule: args.outputModule,
+        startBlockNum: args.startBlock,
+        stopBlockNum: args.stopBlock,
+    });
     await substreams.start(modules)
 }
 
 export async function list(spkg: string) {
-    const { modules } = await download(spkg);
+    let { modules } = await download(spkg);
+    const compatible = [];
     for ( const module of modules.modules ) {
         if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue;
-        console.log(`Compatible modules: ${module.name}`);
+        compatible.push(module.name);
     }
+    logger.info('list', {modules: compatible});
+    process.stdout.write(JSON.stringify(compatible));
+    // return compatible;
 }
 
 export async function create(args: {
-    credentials?: string, // JSON stringify of Google Credentials
+    credentialsFile?: string, // filepath of Google Credentials
 } = {}) {
-    if ( !args.credentials ) throw new Error('[credentials] is required')
-    const sheets = await authenticate(to_credentials(args.credentials));
+    if ( !args.credentialsFile ) throw new Error('[credentialsFile] is required')
+
+    // Authenticate Google Sheets
+    const credentials = parseCredentials(readFileSync(args.credentialsFile));
+    const sheets = await authenticate(credentials);
+
+    // Create spreadsheet
     const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax');
-    console.log(spreadsheetId);
+    if ( !spreadsheetId ) throw new Error('Could not create spreadsheet');
+
+    // Log spreadsheetId
+    logger.info('create', {spreadsheetId});
+    process.stdout.write(spreadsheetId);
     // return spreadsheetId;
 }

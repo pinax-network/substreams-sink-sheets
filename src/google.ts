@@ -1,4 +1,6 @@
 import { sheets_v4 } from 'googleapis'
+import { timeout } from "./utils";
+
 type Sheets = sheets_v4.Sheets;
 const TIMEOUT = 1000; // rate limit on Google API is 100 requests per 100 seconds
 
@@ -22,15 +24,7 @@ export async function createSpreadsheet(sheets: Sheets, title: string) {
     const response = await sheets.spreadsheets.create({
         fields: 'spreadsheetId',
     }, { body: JSON.stringify({ properties: { title }})});
-    const spreadsheetId = response.data.spreadsheetId;
-
-    if ( !spreadsheetId ) {
-        console.error('[-] Could not create new spreadsheet !');
-        process.exit();
-    } else {
-        console.log(`[+] Created new spreadsheet: https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`)
-    }
-    return spreadsheetId;
+    return response.data.spreadsheetId;
 }
 
 export async function insertRows(sheets: Sheets, spreadsheetId: string, range: string, rows: string[][]) {
@@ -42,10 +36,6 @@ export async function insertRows(sheets: Sheets, spreadsheetId: string, range: s
     }, {body: JSON.stringify({ values: rows })});
     await timeout(TIMEOUT);
     return response;
-}
-
-export function timeout(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function format_row(object: {[key: string]: string}, columns: string[]) {

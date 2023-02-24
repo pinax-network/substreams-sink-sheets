@@ -38,6 +38,8 @@ $ substreams-sink-sheets run [options] <spkg>
   - [x] Append row to sheet
   - [ ] Work with different credentials (service account, OAuth, etc.)
   - [ ] Permission checking for editing
+- [GoogleDrive API](https://developers.google.com/drive/api/v3/reference) support
+  - [ ] Update permissions
 - [x] Select columns to output
   - [x] Time (`date,year,month,day,timestamp,seconds`)
   - [x] Block (`block_num`)
@@ -55,6 +57,8 @@ $ substreams-sink-sheets run [options] <spkg>
 - Rate limiting
   - [x] 1 request per second (Google rate limit is 100 requests per 100 seconds)
   - [ ] Batch updates
+- Winston logger
+  - `NODE_ENV='production'` to silent logging
 
 ## References
 

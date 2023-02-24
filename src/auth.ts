@@ -1,4 +1,3 @@
-import * as fs from 'fs'
 import { google } from 'googleapis'
 
 export interface Credentials {
@@ -15,20 +14,11 @@ export function authenticate(credentials: Credentials) {
     return google.sheets({version: 'v4', auth})
 }
 
-export function to_credentials(str: string): Credentials {
+export function parseCredentials(json_str: string): Credentials {
     try {
-        const {client_email, private_key } = JSON.parse(str)
+        const {client_email, private_key } = JSON.parse(json_str)
         if ( !client_email || !private_key ) throw new Error('read credentials missing [client_email] or [private_key]');
         return {client_email, private_key};
-    } catch (e) {
-        throw new Error('read credentials invalid JSON');
-    }
-}
-
-export function read_credentials_from_file(filepath: string, foo: any): string {
-    if ( !filepath ) throw new Error(`[${filepath}] read credentials file not found`);
-    try {
-        return fs.readFileSync(filepath, 'utf-8');
     } catch (e) {
         throw new Error('read credentials invalid JSON');
     }

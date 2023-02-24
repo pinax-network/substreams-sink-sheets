@@ -2,7 +2,6 @@
 
 import { Command } from 'commander'
 import { run, list, create } from '../index'
-import { read_credentials_from_file } from "../src/auth"
 import pkg from '../package.json'
 
 const program = new Command()
@@ -18,7 +17,7 @@ program.command('run')
     .description('Push data from a Substreams DatabaseChanges map output to a Google Sheets spreadsheet')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .argument('<spreadsheet-id>', 'ID of Google Sheets spreadsheet to write output to (i.e. https://docs.google.com/spreadsheets/d/{ID}/edit)')
-    .option('-c --credentials <string>', 'JSON file containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', read_credentials_from_file, 'credentials.json')
+    .option('-c --credentials-file <string>', 'JSON filepath containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', 'credentials.json')
     .option('-m --output-module <string>', 'Name of the output module (declared in the manifest)', 'db_out')
     .option('-e --substreams-endpoint <string>', 'Substreams gRPC endpoint', 'eos.firehose.eosnation.io:9001')
     .option('-s --start-block <int>', 'Start block to stream from (defaults to -1, which means the initialBlock of the first module you are streaming)')
@@ -35,7 +34,7 @@ program.command('list')
 
 program.command('create')
     .description('Create a new Google Sheets spreadsheet and return the ID')
-    .option('-c --credentials <string>', 'JSON file containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', read_credentials_from_file, 'credentials.json')
+    .option('-c --credentials-file <string>', 'JSON filepath containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', 'credentials.json')
     .action(create)
 
 program.command('completion').description('Generate the autocompletion script for the specified shell')
