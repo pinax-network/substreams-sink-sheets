@@ -1,6 +1,31 @@
 # [`Substreams`](https://substreams.streamingfast.io/) Google Sheets sink module
 
-> `substreams-sink-sheets` pushes [Substreams DatabaseChanges](https://github.com/streamingfast/substreams-database-change/blob/develop/proto/substreams/sink/database/v1/database.proto) map output to a Google Sheets spreadsheet of your choice.
+[<img alt="github" src="https://img.shields.io/badge/Github-substreams.sheets-8da0cb?style=for-the-badge&logo=github" height="20">](https://github.com/pinax-network/substreams-sink-sheets)
+[<img alt="npm" src="https://img.shields.io/npm/v/substreams-sink-sheets.svg?style=for-the-badge&color=CB0001&logo=npm" height="20">](https://www.npmjs.com/package/substreams-sink-sheets)
+[<img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/pinax-network/substreams-sink-sheets/ci.yml?branch=main&style=for-the-badge" height="20">](https://github.com/pinax-network/substreams-sink-sheets/actions?query=branch%3Amain)
+
+> `substreams-sink-sheets` pushes [Substreams DatabaseChanges](https://github.com/streamingfast/substreams-database-change/blob/develop/proto/substreams/sink/database/v1/database.proto) map `db_out` outputs to [Google Sheets](https://developers.google.com/sheets/api/reference/rest/).
+
+### Further resources
+
+- [Substreams documentation](https://substreams.streamingfast.io)
+- [Substreams `DatabaseChanges`](https://github.com/streamingfast/substreams-database-change)
+
+## CLI
+[**Use pre-built binaries**](https://github.com/pinax-network/substreams-sink-sheets/releases)
+- [x] MacOS
+- [x] Linux
+- [x] Windows
+
+**Install** globally via npm
+```
+$ npm install -g substreams-sink-sheets
+```
+
+**Run**
+```
+$ substreams-sink-sheets run [options] <spkg>
+```
 
 ## Features
 - Consume `*.spkg` from:
@@ -8,14 +33,14 @@
   - [ ] Read from `*.spkg` local filesystem
   - [ ] Read from `substreams.yaml`
 * [x] List compatible modules from `.spkg`
-- GoogleSheet API support
+- [GoogleSheet API](https://developers.google.com/sheets/api/reference/rest/) support
   - [x] Authenticate via JWT credentials
   - [x] Append row to sheet
   - [ ] Work with different credentials (service account, OAuth, etc.)
   - [ ] Permission checking for editing
 - [x] Select columns to output
-  - [ ] Time (`date,year,month,day,timestamp,seconds`)
-  - [ ] Block (`block_num`)
+  - [x] Time (`date,year,month,day,timestamp,seconds`)
+  - [x] Block (`block_num`)
   - [x] `DatabaseChanges`
   - [x] Add missing columns headers to sheet if not present
 - [x] Create a new sheet if no `spreadsheetId` specified

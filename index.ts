@@ -1,7 +1,11 @@
 import { Substreams, download } from 'substreams'
-import { parseDatabaseChanges } from './database_changes'
-import { createSpreadsheet, format_row, hasHeaderRow, insertRows } from './google'
-import { authenticate, read_credentials } from './auth'
+import { parseDatabaseChanges } from './src/database_changes'
+import { createSpreadsheet, format_row, hasHeaderRow, insertRows } from './src/google'
+import { authenticate, read_credentials } from './src/auth'
+
+export * from "./src/google";
+export * from "./src/database_changes";
+export * from "./src/auth";
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
 
@@ -12,13 +16,15 @@ export async function run(spkg: string, credentials: string, args: {
     stopBlock?: string,
     substreamsEndpoint?: string,
     columns?: string[],
-    addHeaderRow?: boolean
+    addHeaderRow?: boolean,
+    range?: string,
 } = {}) {
     // User params
     const columns = args.columns ?? [];
-    const range = 'Sheet1';  // Sheet1!1:1
     let spreadsheetId = args.spreadsheetId || '';
+    const range = args.range;
     
+    if ( !range ) throw new Error('[range] is required')
     if ( !args.outputModule ) throw new Error('[outputModule] is required')
     if ( !columns.length ) throw new Error('[columns] is empty');
     if ( !credentials ) throw new Error('[credentials] is required')

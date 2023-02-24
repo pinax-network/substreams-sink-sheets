@@ -2,7 +2,8 @@
     "name": "substreams-sink-sheets",
     "version": "0.1.0",
     "description": "Substreams Google Sheets sink module",
-    "main": "dist/bin/cli.js",
+    "main": "dist/index.js",
+    "types": "dist/index.d.js",
     "bin": {
         "substreams-sink-sheets": "dist/bin/cli.js"
     },

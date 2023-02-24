@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander'
-import { run, list } from './substreams'
+import { run, list } from '../index'
 import pkg from '../package.json'
 
 const program = new Command()
@@ -24,6 +24,7 @@ program.command('run')
     .option('-t --stop-block <string>', 'Stop block to end stream at, inclusively')
     .option('--columns <items>', 'Output columns filter (comma separated list)', commaSeparatedList,["timestamp", "block_num"])
     .option('--add-header-row <bool>', 'Add the name of the columns to the first row of the spreadsheet ', true)
+    .option('--range <string>', 'The A1 notation of the table range.', "Sheet1")
     .action(run)
 
 program.command('list')
