@@ -1,5 +1,6 @@
 node_modules
 dist
+.next
 
 # Logs
 logs
@@ -26,3 +27,6 @@ credentials.json
 
 # ESLint
 .eslintrc.json
+
+# Env variables
+*.env*

@@ -1,6 +1,6 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
-import { createSpreadsheet, format_row, hasHeaderRow, insertRows } from './src/google'
+import { createSpreadsheet, formatRow, hasHeaderRow, insertRows } from './src/google'
 import { authenticate, parseCredentials } from './src/auth'
 import { readFileSync } from './src/utils'
 import { logger } from './src/logger'
@@ -10,12 +10,12 @@ export * from './src/database_changes'
 export * from './src/auth'
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
-export const DEFAULT_CREDENTIALS_FILE = 'credentials.json';
-export const DEFAULT_OUTPUT_MODULE = 'db_out';
-export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443';
+export const DEFAULT_CREDENTIALS_FILE = 'credentials.json'
+export const DEFAULT_OUTPUT_MODULE = 'db_out'
+export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
 export const DEFAULT_ADD_HEADER_ROW = true
-export const DEFAULT_RANGE = 'Sheet1';
+export const DEFAULT_RANGE = 'Sheet1'
 
 export async function run(spkg: string, spreadsheetId: string, args: {
     outputModule?: string,
@@ -44,7 +44,6 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     // Authenticate Google Sheets
     const credentials = parseCredentials(readFileSync(credentialsFile))
     const sheets = await authenticate(credentials)
-    logger.info('authenticate', {client_email: credentials.client_email})
     
     // Add header row if not exists
     if ( addHeaderRow ) {
@@ -74,7 +73,7 @@ export async function run(spkg: string, spreadsheetId: string, args: {
         if ( !output.data.mapOutput.typeUrl.match(MESSAGE_TYPE_NAME) ) return
         const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
         const databaseChanges = parseDatabaseChanges(decoded, clock)
-        const rows = databaseChanges.map(changes => format_row(changes, columns))
+        const rows = databaseChanges.map(changes => formatRow(changes, columns))
         await insertRows(sheets, spreadsheetId, range, rows)
         logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
     })

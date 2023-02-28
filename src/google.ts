@@ -40,7 +40,7 @@ export async function insertRows(sheets: Sheets, spreadsheetId: string, range: s
     return response
 }
 
-export function format_row(object: {[key: string]: string}, columns: string[]) {
+export function formatRow(object: {[key: string]: string}, columns: string[]) {
     const items = []
 
     for ( const column of columns ) {
