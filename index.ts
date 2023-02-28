@@ -10,6 +10,12 @@ export * from './src/database_changes'
 export * from './src/auth'
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
+export const DEFAULT_CREDENTIALS_FILE = 'credentials.json';
+export const DEFAULT_OUTPUT_MODULE = 'db_out';
+export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443';
+export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
+export const DEFAULT_ADD_HEADER_ROW = true
+export const DEFAULT_RANGE = 'Sheet1';
 
 export async function run(spkg: string, spreadsheetId: string, args: {
     outputModule?: string,
@@ -22,22 +28,26 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     credentialsFile?: string, // filepath of Google Credentials
 } = {}) {
     // User params
-    const columns = args.columns ?? []
-    const range = args.range
+    const credentialsFile = args.credentialsFile ?? DEFAULT_CREDENTIALS_FILE
+    const outputModule = args.outputModule ?? DEFAULT_OUTPUT_MODULE
+    const substreamsEndpoint = args.substreamsEndpoint ?? DEFAULT_SUBSTREAMS_ENDPOINT
+    const columns = args.columns ?? DEFAULT_COLUMNS
+    const addHeaderRow = args.addHeaderRow ?? DEFAULT_ADD_HEADER_ROW
+    const range = args.range ?? DEFAULT_RANGE
 
     if ( !range ) throw new Error('[range] is required')
-    if ( !args.outputModule ) throw new Error('[outputModule] is required')
+    if ( !outputModule ) throw new Error('[outputModule] is required')
     if ( !columns.length ) throw new Error('[columns] is empty')
-    if ( !args.credentialsFile ) throw new Error('[credentialsFile] is required')
+    if ( !credentialsFile ) throw new Error('[credentialsFile] is required')
     if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
     
     // Authenticate Google Sheets
-    const credentials = parseCredentials(readFileSync(args.credentialsFile))
+    const credentials = parseCredentials(readFileSync(credentialsFile))
     const sheets = await authenticate(credentials)
     logger.info('authenticate', {client_email: credentials.client_email})
     
     // Add header row if not exists
-    if ( args.addHeaderRow ) {
+    if ( addHeaderRow ) {
         if ( !await hasHeaderRow(sheets, spreadsheetId, range) ) {
             await insertRows(sheets, spreadsheetId, range, [columns])
             logger.info('addHeaderRow', {columns, spreadsheetId})
@@ -45,8 +55,8 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     }
 
     // Initialize Substreams
-    const substreams = new Substreams(args.outputModule, {
-        host: args.substreamsEndpoint,
+    const substreams = new Substreams(outputModule, {
+        host: substreamsEndpoint,
         startBlockNum: args.startBlock,
         stopBlockNum: args.stopBlock,
         authorization: process.env.STREAMINGFAST_KEY // or SUBSTREAMS_API_TOKEN
@@ -71,8 +81,8 @@ export async function run(spkg: string, spreadsheetId: string, args: {
 
     // start streaming Substream
     logger.info('start', {
-        host: args.substreamsEndpoint,
-        outputModule: args.outputModule,
+        host: substreamsEndpoint,
+        outputModule: outputModule,
         startBlockNum: args.startBlock,
         stopBlockNum: args.stopBlock,
     })
