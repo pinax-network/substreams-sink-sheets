@@ -1,16 +1,12 @@
 {
     "name": "substreams-sink-sheets",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "description": "Substreams Google Sheets sink module",
     "main": "dist/index.js",
     "types": "dist/index.d.js",
     "bin": {
         "substreams-sink-sheets": "dist/bin/cli.js"
     },
-    "files": [
-        "dist"
-    ],
-    "license": "MIT OR Apache-2.0",
     "repository": "git@github.com:pinax-network/substreams-sink-sheets.git",
     "keywords": [
         "substreams",
@@ -23,19 +19,26 @@
         "name": "Krow10",
         "email": "23462475+Krow10@users.noreply.github.com"
     },
+    "files": [
+        "dist"
+    ],
     "contributors": [
         {
             "name": "Denis",
             "email": "denis@pinax.network"
         }
     ],
+    "license": "MIT OR Apache-2.0",
     "scripts": {
         "prepublishOnly": "tsc",
-        "build": "tsc && pkg ."
+        "build": "tsc && pkg . --out-path out/",
+        "dev": "next dev"
     },
     "dependencies": {
         "commander": "10.x",
         "googleapis": "111.x",
+        "next-auth": "^4.19.2",
+        "open": "^8.4.2",
         "substreams": "0.3.x",
         "winston": "3.x"
     },
