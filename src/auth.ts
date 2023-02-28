@@ -3,6 +3,8 @@ import { google } from 'googleapis'
 import open from 'open'
 import * as url from 'url'
 
+import { logger } from './logger'
+
 export interface Credentials {
     client_id: string;
     client_secret: string;
@@ -19,7 +21,7 @@ async function oauth_request(oauth2Client: any) {
         const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
             try {
                 if (req.url && req.url.indexOf('/oauth2callback') > -1) {
-                    const qs = new url.URL(req.url, 'http://localhost:3000').searchParams
+                    const qs = new url.URL(req.url, 'http://localhost:3001').searchParams
                     res.end('Authentication successful !')
                     server.close()
                     const { tokens } = await oauth2Client.getToken(qs.get('code') || '')
@@ -29,19 +31,20 @@ async function oauth_request(oauth2Client: any) {
             } catch (e) {
                 reject(e)
             }
-        }).listen(3000, () => {
+        }).listen(3001, () => {
             // open the browser to the authorize url to start the workflow
             open(authorizeUrl, {wait: false}).then((cp: any) => cp.unref())
+            logger.info(`Your browser has been opened to visit:\n\t${authorizeUrl}\nAuthorize access to your Google Sheet to continue.`)
         })
     })
 }
 
 export async function authenticate(credentials: Credentials) {
-    if ( !google._options['auth'] ) {
+    if ( !isAuthenticated() ) {
         const oauth2Client = new google.auth.OAuth2(
             credentials.client_id,
             credentials.client_secret,
-            'http://localhost:3000/oauth2callback' // Callback URL for Google OAuth
+            'http://localhost:3001/oauth2callback' // Callback URL for Google OAuth
         )
 
         google.options({auth: oauth2Client}) // Store the OAuth client object directly for use by future requests
@@ -49,6 +52,10 @@ export async function authenticate(credentials: Credentials) {
     }
 
     return google.sheets({ version: 'v4' })
+}
+
+export function isAuthenticated() {
+    return google._options['auth'] !== undefined
 }
 
 export function parseCredentials(json_str: string): Credentials {

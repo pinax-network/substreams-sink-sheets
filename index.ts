@@ -1,7 +1,7 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, hasHeaderRow, insertRows } from './src/google'
-import { authenticate, parseCredentials } from './src/auth'
+import { authenticate, isAuthenticated, parseCredentials } from './src/auth'
 import { readFileSync } from './src/utils'
 import { logger } from './src/logger'
 
@@ -38,11 +38,15 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     if ( !range ) throw new Error('[range] is required')
     if ( !outputModule ) throw new Error('[outputModule] is required')
     if ( !columns.length ) throw new Error('[columns] is empty')
-    if ( !credentialsFile ) throw new Error('[credentialsFile] is required')
     if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
     
     // Authenticate Google Sheets
-    const credentials = parseCredentials(readFileSync(credentialsFile))
+    let credentials = {client_id: '', client_secret: ''}
+    if ( !isAuthenticated() ) {
+        if ( !credentialsFile ) throw new Error('[credentialsFile] is required')
+        credentials = parseCredentials(readFileSync(credentialsFile))
+    }
+
     const sheets = await authenticate(credentials)
     
     // Add header row if not exists
