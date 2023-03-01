@@ -9,7 +9,7 @@ export * from './src/database_changes'
 export * from './src/auth'
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
-export const DEFAULT_API_KEY_ENV = 'SUBSTREAMS_API_KEY'
+export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
@@ -24,8 +24,8 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
     columns?: string[],
     addHeaderRow?: boolean,
     range?: string,
-    substreamsApiKey?: string,
-    substreamsApiKeyEnvvar?: string
+    substreamsApiToken?: string,
+    substreamsApiTokenEnvvar?: string
 } = {}) {
     // User params
     const outputModule = options.outputModule ?? DEFAULT_OUTPUT_MODULE
@@ -33,14 +33,14 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
     const columns = options.columns ?? DEFAULT_COLUMNS
     const addHeaderRow = options.addHeaderRow ?? DEFAULT_ADD_HEADER_ROW
     const range = options.range ?? DEFAULT_RANGE
-    const api_key_envvar = options.substreamsApiKeyEnvvar ?? DEFAULT_API_KEY_ENV
-    const api_key = options.substreamsApiKey ?? process.env[api_key_envvar]
+    const api_token_envvar = options.substreamsApiTokenEnvvar ?? DEFAULT_API_TOKEN_ENV
+    const api_token = options.substreamsApiToken ?? process.env[api_token_envvar]
 
     if ( !range ) throw new Error('[range] is required')
     if ( !outputModule ) throw new Error('[output-module] is required')
     if ( !columns.length ) throw new Error('[columns] is empty')
     if ( !spreadsheetId ) throw new Error('[spreadsheet-id] is required')
-    if ( !api_key ) throw new Error('[substreams-api-key] is required')
+    if ( !api_token ) throw new Error('[substreams-api-token] is required')
     
     // Authenticate Google Sheets
     const sheets = await authenticate({ accessToken: credentials[0], refreshToken: credentials[1] })
@@ -58,7 +58,7 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
         host: substreamsEndpoint,
         startBlockNum: options.startBlock,
         stopBlockNum: options.stopBlock,
-        authorization: api_key
+        authorization: api_token
     })
 
     // Download Substream from URL or IPFS

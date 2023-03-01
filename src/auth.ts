@@ -21,3 +21,16 @@ export async function authenticate(credentials: Credentials) {
 export function isAuthenticated() {
     return google._options['auth'] !== undefined
 }
+
+export async function issue(api_key: string, url: string) {
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({api_key}),
+    }
+
+    const response = await fetch(url, options)
+    return (await response.json())?.token
+}

@@ -4,7 +4,7 @@ import { Command } from 'commander'
 import { run, list, create } from '../index'
 import pkg from '../package.json'
 import {
-    DEFAULT_API_KEY_ENV,
+    DEFAULT_API_TOKEN_ENV,
     DEFAULT_OUTPUT_MODULE,
     DEFAULT_SUBSTREAMS_ENDPOINT,
     DEFAULT_COLUMNS,
@@ -34,8 +34,8 @@ program.command('run')
     .option('--columns <items>', 'Output columns filter as a comma-separated list', commaSeparatedList, DEFAULT_COLUMNS)
     .option('--add-header-row <bool>', 'Add the name of the columns to the first row of the spreadsheet', DEFAULT_ADD_HEADER_ROW)
     .option('--range <string>', 'The A1 notation of the table range', DEFAULT_RANGE)
-    .option('--substreams-api-key <string>', 'API key for the substream endpoint')
-    .option('--substreams-api-key-envvar <string>', 'Environnement variable name of the API key for the substream endpoint', DEFAULT_API_KEY_ENV)
+    .option('--substreams-api-token <string>', 'API token for the substream endpoint')
+    .option('--substreams-api-token-envvar <string>', 'Environnement variable name of the API token for the substream endpoint', DEFAULT_API_TOKEN_ENV)
     .action(run)
 
 program.command('list')
