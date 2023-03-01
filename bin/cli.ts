@@ -4,6 +4,7 @@ import { Command } from 'commander'
 import { run, list, create } from '../index'
 import pkg from '../package.json'
 import {
+    DEFAULT_API_KEY_ENV,
     DEFAULT_OUTPUT_MODULE,
     DEFAULT_SUBSTREAMS_ENDPOINT,
     DEFAULT_COLUMNS,
@@ -26,7 +27,6 @@ program.command('run')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .argument('<spreadsheet-id>', 'ID of Google Sheets spreadsheet to write output to (i.e. https://docs.google.com/spreadsheets/d/{ID}/edit)')
     .argument('<credentials>', 'Access and refresh tokens from Google OAuth2 (comma-separated)', commaSeparatedList)
-    .argument('<substream-api-key>', 'API key for the substream endpoint')
     .option('-m --output-module <string>', 'Name of the output module (declared in the manifest)', DEFAULT_OUTPUT_MODULE)
     .option('-e --substreams-endpoint <string>', 'Substreams gRPC endpoint to stream data from', DEFAULT_SUBSTREAMS_ENDPOINT)
     .option('-s --start-block <int>', 'Start block to stream from (defaults to -1, which means the initialBlock of the first module you are streaming)')
@@ -34,6 +34,8 @@ program.command('run')
     .option('--columns <items>', 'Output columns filter as a comma-separated list', commaSeparatedList, DEFAULT_COLUMNS)
     .option('--add-header-row <bool>', 'Add the name of the columns to the first row of the spreadsheet', DEFAULT_ADD_HEADER_ROW)
     .option('--range <string>', 'The A1 notation of the table range', DEFAULT_RANGE)
+    .option('--substreams-api-key <string>', 'API key for the substream endpoint')
+    .option('--substreams-api-key-envvar <string>', 'Environnement variable name of the API key for the substream endpoint', DEFAULT_API_KEY_ENV)
     .action(run)
 
 program.command('list')
