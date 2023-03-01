@@ -1,7 +1,7 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, hasHeaderRow, insertRows } from './src/google'
-import { authenticateOAuth2, authenticateServiceAccount } from './src/auth'
+import { handle_google_authentication } from './src/auth'
 import { logger } from './src/logger'
 
 export * from './src/google'
@@ -15,20 +15,6 @@ export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
 export const DEFAULT_ADD_HEADER_ROW = true
 export const DEFAULT_RANGE = 'Sheet1'
-
-async function handle_google_authentication(args: {
-    accessToken?: string,
-    refreshToken?: string,
-    credentials?: string,
-}) {
-    if ( args.accessToken && args.refreshToken ) {
-        return await authenticateOAuth2({ accessToken: args.accessToken, refreshToken: args.refreshToken })
-    } else if ( args.credentials ) {
-        return await authenticateServiceAccount(args.credentials)
-    } else {
-        throw new Error('Google OAuth2 tokens or credentials file is required')
-    }
-}
 
 export async function run(spkg: string, spreadsheetId: string, options: {
     outputModule?: string,

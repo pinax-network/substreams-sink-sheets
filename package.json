@@ -1,6 +1,6 @@
 {
     "name": "substreams-sink-sheets",
-    "version": "0.3.0",
+    "version": "0.2.0",
     "description": "Substreams Google Sheets sink module",
     "main": "dist/index.js",
     "types": "dist/index.d.js",
