@@ -1,7 +1,7 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, hasHeaderRow, insertRows } from './src/google'
-import { authenticate } from './src/auth'
+import { authenticateOAuth2, authenticateServiceAccount } from './src/auth'
 import { logger } from './src/logger'
 
 export * from './src/google'
@@ -16,7 +16,21 @@ export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
 export const DEFAULT_ADD_HEADER_ROW = true
 export const DEFAULT_RANGE = 'Sheet1'
 
-export async function run(spkg: string, spreadsheetId: string, credentials: string[], options: {
+async function handle_google_authentication(args: {
+    accessToken?: string,
+    refreshToken?: string,
+    credentials?: string,
+}) {
+    if ( args.accessToken && args.refreshToken ) {
+        return await authenticateOAuth2({ accessToken: args.accessToken, refreshToken: args.refreshToken })
+    } else if ( args.credentials ) {
+        return await authenticateServiceAccount(args.credentials)
+    } else {
+        throw new Error('Google OAuth2 tokens or credentials file is required')
+    }
+}
+
+export async function run(spkg: string, spreadsheetId: string, options: {
     outputModule?: string,
     substreamsEndpoint?: string,
     startBlock?: string,
@@ -24,6 +38,9 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
     columns?: string[],
     addHeaderRow?: boolean,
     range?: string,
+    accessToken?: string,
+    refreshToken?: string,
+    credentials?: string,
     substreamsApiToken?: string,
     substreamsApiTokenEnvvar?: string
 } = {}) {
@@ -43,7 +60,11 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
     if ( !api_token ) throw new Error('[substreams-api-token] is required')
     
     // Authenticate Google Sheets
-    const sheets = await authenticate({ accessToken: credentials[0], refreshToken: credentials[1] })
+    const sheets = await handle_google_authentication({
+        accessToken: options.accessToken,
+        refreshToken: options.refreshToken,
+        credentials: options.credentials
+    })
     
     // Add header row if not exists
     if ( addHeaderRow ) {
@@ -104,9 +125,13 @@ export async function list(spkg: string) {
     process.stdout.write(JSON.stringify(compatible))
 }
 
-export async function create(credentials: string[]) {
+export async function create(options: {
+    accessToken?: string,
+    refreshToken?: string,
+    credentials?: string,
+}) {
     // Authenticate Google Sheets
-    const sheets = await authenticate({ accessToken: credentials[0], refreshToken: credentials[1] })
+    const sheets = await handle_google_authentication(options)
 
     // Create spreadsheet
     const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax')
