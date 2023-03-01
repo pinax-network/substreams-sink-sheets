@@ -31,7 +31,7 @@
     "license": "MIT OR Apache-2.0",
     "scripts": {
         "prepublishOnly": "tsc",
-        "build": "tsc && pkg .
+        "build": "tsc && pkg ."
     },
     "dependencies": {
         "commander": "10.x",
