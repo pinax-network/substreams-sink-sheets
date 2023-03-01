@@ -15,7 +15,7 @@ export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
 export const DEFAULT_ADD_HEADER_ROW = true
 export const DEFAULT_RANGE = 'Sheet1'
 
-export async function run(spkg: string, spreadsheetId: string, credentials: string[], args: {
+export async function run(spkg: string, spreadsheetId: string, credentials: string[], api_key: string, args: {
     outputModule?: string,
     startBlock?: string,
     stopBlock?: string,
@@ -52,7 +52,7 @@ export async function run(spkg: string, spreadsheetId: string, credentials: stri
         host: substreamsEndpoint,
         startBlockNum: args.startBlock,
         stopBlockNum: args.stopBlock,
-        authorization: process.env.STREAMINGFAST_KEY // or SUBSTREAMS_API_TOKEN
+        authorization: api_key
     })
 
     // Download Substream from URL or IPFS
