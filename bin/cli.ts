@@ -4,7 +4,6 @@ import { Command } from 'commander'
 import { run, list, create } from '../index'
 import pkg from '../package.json'
 import {
-    DEFAULT_CREDENTIALS_FILE,
     DEFAULT_OUTPUT_MODULE,
     DEFAULT_SUBSTREAMS_ENDPOINT,
     DEFAULT_COLUMNS,
@@ -26,7 +25,7 @@ program.command('run')
     .description('Push data from a Substreams DatabaseChanges map output to a Google Sheets spreadsheet')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .argument('<spreadsheet-id>', 'ID of Google Sheets spreadsheet to write output to (i.e. https://docs.google.com/spreadsheets/d/{ID}/edit)')
-    .option('-c --credentials-file <string>', 'JSON filepath containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', DEFAULT_CREDENTIALS_FILE)
+    .argument('<credentials>', 'Access and refresh tokens from Google OAuth2 (comma-separated).', commaSeparatedList)
     .option('-m --output-module <string>', 'Name of the output module (declared in the manifest)', DEFAULT_OUTPUT_MODULE)
     .option('-e --substreams-endpoint <string>', 'Substreams gRPC endpoint', DEFAULT_SUBSTREAMS_ENDPOINT)
     .option('-s --start-block <int>', 'Start block to stream from (defaults to -1, which means the initialBlock of the first module you are streaming)')
@@ -45,7 +44,7 @@ program.command('list')
 program.command('create')
     .showHelpAfterError()
     .description('Create a new Google Sheets spreadsheet and return the ID')
-    .option('-c --credentials-file <string>', 'JSON filepath containing the credentials for a Google API Service Account (see https://support.google.com/a/answer/7378726?hl=en)', 'credentials.json')
+    .argument('<credentials>', 'Access and refresh tokens from Google OAuth2 (comma-separated).', commaSeparatedList)
     .action(create)
 
 program.command('completion').description('Generate the autocompletion script for the specified shell')

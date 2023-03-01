@@ -1,8 +1,7 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, hasHeaderRow, insertRows } from './src/google'
-import { authenticate, isAuthenticated, parseCredentials } from './src/auth'
-import { readFileSync } from './src/utils'
+import { authenticate } from './src/auth'
 import { logger } from './src/logger'
 
 export * from './src/google'
@@ -10,14 +9,13 @@ export * from './src/database_changes'
 export * from './src/auth'
 
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
-export const DEFAULT_CREDENTIALS_FILE = 'credentials.json'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
 export const DEFAULT_ADD_HEADER_ROW = true
 export const DEFAULT_RANGE = 'Sheet1'
 
-export async function run(spkg: string, spreadsheetId: string, args: {
+export async function run(spkg: string, spreadsheetId: string, credentials: string[], args: {
     outputModule?: string,
     startBlock?: string,
     stopBlock?: string,
@@ -25,10 +23,8 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     columns?: string[],
     addHeaderRow?: boolean,
     range?: string,
-    credentialsFile?: string, // filepath of Google Credentials
 } = {}) {
     // User params
-    const credentialsFile = args.credentialsFile ?? DEFAULT_CREDENTIALS_FILE
     const outputModule = args.outputModule ?? DEFAULT_OUTPUT_MODULE
     const substreamsEndpoint = args.substreamsEndpoint ?? DEFAULT_SUBSTREAMS_ENDPOINT
     const columns = args.columns ?? DEFAULT_COLUMNS
@@ -41,13 +37,7 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     if ( !spreadsheetId ) throw new Error('[spreadsheetId] is required')
     
     // Authenticate Google Sheets
-    let credentials = {client_id: '', client_secret: ''}
-    if ( !isAuthenticated() ) {
-        if ( !credentialsFile ) throw new Error('[credentialsFile] is required')
-        credentials = parseCredentials(readFileSync(credentialsFile))
-    }
-
-    const sheets = await authenticate(credentials)
+    const sheets = await authenticate({ accessToken: credentials[0], refreshToken: credentials[1] })
     
     // Add header row if not exists
     if ( addHeaderRow ) {
@@ -75,9 +65,11 @@ export async function run(spkg: string, spreadsheetId: string, args: {
     substreams.on('mapOutput', async (output, clock) => {
         // Handle map operations
         if ( !output.data.mapOutput.typeUrl.match(MESSAGE_TYPE_NAME) ) return
+
         const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
         const databaseChanges = parseDatabaseChanges(decoded, clock)
         const rows = databaseChanges.map(changes => formatRow(changes, columns))
+
         await insertRows(sheets, spreadsheetId, range, rows)
         logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
     })
@@ -104,17 +96,11 @@ export async function list(spkg: string) {
 
     logger.info('list', {modules: compatible})
     process.stdout.write(JSON.stringify(compatible))
-    // return compatible;
 }
 
-export async function create(args: {
-    credentialsFile?: string, // filepath of Google Credentials
-} = {}) {
-    if ( !args.credentialsFile ) throw new Error('[credentialsFile] is required')
-
+export async function create(credentials: string[]) {
     // Authenticate Google Sheets
-    const credentials = parseCredentials(readFileSync(args.credentialsFile))
-    const sheets = await authenticate(credentials)
+    const sheets = await authenticate({ accessToken: credentials[0], refreshToken: credentials[1] })
 
     // Create spreadsheet
     const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax')
@@ -123,5 +109,4 @@ export async function create(args: {
     // Log spreadsheetId
     logger.info('create', {spreadsheetId})
     process.stdout.write(spreadsheetId)
-    // return spreadsheetId;
 }
