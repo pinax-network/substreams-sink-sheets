@@ -8,7 +8,6 @@ import {
     DEFAULT_OUTPUT_MODULE,
     DEFAULT_SUBSTREAMS_ENDPOINT,
     DEFAULT_COLUMNS,
-    DEFAULT_PREVIEW_DATA,
     DEFAULT_ADD_HEADER_ROW,
     DEFAULT_RANGE,
 } from '../index'
@@ -31,9 +30,8 @@ program.command('run')
     .option('-e --substreams-endpoint <string>', 'Substreams gRPC endpoint to stream data from', DEFAULT_SUBSTREAMS_ENDPOINT)
     .option('-s --start-block <int>', 'Start block to stream from (defaults to -1, which means the initialBlock of the first module you are streaming)')
     .option('-t --stop-block <string>', 'Stop block to end stream at, inclusively')
-    .option('-c --columns <items>', 'Output data columns filter as a comma-separated list', commaSeparatedList, DEFAULT_COLUMNS)
-    .option('--preview-data', 'Output filtered data to console instead of pushing to spreadsheet. Useful for visualizing available columns and data format', DEFAULT_PREVIEW_DATA)
-    .option('--add-header-row', 'Add the name of the columns to the first row of the spreadsheet', DEFAULT_ADD_HEADER_ROW)
+    .option('-c --columns <items>', 'Output columns filter as a comma-separated list', commaSeparatedList, DEFAULT_COLUMNS)
+    .option('--add-header-row <bool>', 'Add the name of the columns to the first row of the spreadsheet', DEFAULT_ADD_HEADER_ROW)
     .option('--range <string>', 'The A1 notation of the table range', DEFAULT_RANGE)
     .option('--access-token <string>', 'Google OAuth2 access token')
     .option('--refresh-token <string>', 'Google OAuth2 refresh token')
