@@ -12,7 +12,8 @@ export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
-export const DEFAULT_COLUMNS = []
+export const DEFAULT_COLUMNS = [] as string[]
+export const DEFAULT_PREVIEW_DATA = false
 export const DEFAULT_ADD_HEADER_ROW = true
 export const DEFAULT_RANGE = 'Sheet1'
 
@@ -22,6 +23,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     startBlock?: string,
     stopBlock?: string,
     columns?: string[],
+    previewData?: boolean,
     addHeaderRow?: boolean,
     range?: string,
     accessToken?: string,
@@ -33,6 +35,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     // User params
     const outputModule = options.outputModule ?? DEFAULT_OUTPUT_MODULE
     const substreamsEndpoint = options.substreamsEndpoint ?? DEFAULT_SUBSTREAMS_ENDPOINT
+    const previewData = options.previewData ?? DEFAULT_PREVIEW_DATA
     const addHeaderRow = options.addHeaderRow ?? DEFAULT_ADD_HEADER_ROW
     const range = options.range ?? DEFAULT_RANGE
     const api_token_envvar = options.substreamsApiTokenEnvvar ?? DEFAULT_API_TOKEN_ENV
@@ -66,6 +69,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     const DatabaseChanges = registry.findMessage(MESSAGE_TYPE_NAME)
     if ( !DatabaseChanges ) throw new Error(`Could not find [${MESSAGE_TYPE_NAME}] message type`)
 
+    const substream_output_data = [] as any[]
     substreams.on('mapOutput', async (output, clock) => {
         // Handle map operations
         if ( !output.data.mapOutput.typeUrl.match(MESSAGE_TYPE_NAME) ) return
@@ -75,10 +79,18 @@ export async function run(spkg: string, spreadsheetId: string, options: {
 
         // If no columns specified, determine from the returned data as we'll include all fields
         if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
-        const rows = databaseChanges.map(changes => formatRow(changes, columns))
 
-        await insertRows(sheets, spreadsheetId, range, rows)
-        logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
+        if ( previewData ){
+            for ( const changes of databaseChanges ) {
+                const item = {} as any
+                for ( const column of columns ) item[column] = changes[column]
+                substream_output_data.push(item)
+            }
+        } else {
+            const rows = databaseChanges.map(changes => formatRow(changes, columns))
+            await insertRows(sheets, spreadsheetId, range, rows)
+            logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
+        }
     })
 
     // start streaming Substream
@@ -91,8 +103,12 @@ export async function run(spkg: string, spreadsheetId: string, options: {
 
     await substreams.start(modules)
 
-    // Add header row if not exists
-    if ( addHeaderRow === true ) {
+    if ( previewData ) {
+        logger.info('Output data preview :')
+        logger.info(JSON.stringify(substream_output_data[0], null, 2))
+        //console.table(substream_output_data)
+        return //substream_output_data
+    } else if ( addHeaderRow ) {
         await insertRows(sheets, spreadsheetId, range + '!1:1', [columns])
         logger.info('addHeaderRow', {columns, spreadsheetId})
     }
