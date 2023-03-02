@@ -92,7 +92,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     await substreams.start(modules)
 
     // Add header row if not exists
-    if ( addHeaderRow === true ) {
+    if ( addHeaderRow ) {
         await insertRows(sheets, spreadsheetId, range + '!1:1', [columns])
         logger.info('addHeaderRow', {columns, spreadsheetId})
     }
