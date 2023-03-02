@@ -1,6 +1,6 @@
 {
     "name": "substreams-sink-sheets",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Substreams Google Sheets sink module",
     "main": "dist/index.js",
     "types": "dist/index.d.js",
@@ -35,6 +35,7 @@
     },
     "dependencies": {
         "commander": "10.x",
+        "dotenv": "16.x",
         "googleapis": "111.x",
         "substreams": "0.3.x",
         "winston": "3.x"

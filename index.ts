@@ -1,34 +1,37 @@
-import { Substreams, download } from 'substreams'
+import { Substreams, download, Clock } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, insertRows } from './src/google'
-import { handle_google_authentication } from './src/auth'
+import { authenticateGoogle, Credentials } from './src/auth'
 import { logger } from './src/logger'
 
 export * from './src/google'
 export * from './src/database_changes'
 export * from './src/auth'
 
+import * as dotenv from 'dotenv'
+dotenv.config()
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = []
-export const DEFAULT_ADD_HEADER_ROW = true
+export const DEFAULT_ADD_HEADER_ROW = false
 export const DEFAULT_RANGE = 'Sheet1'
 
 export async function run(spkg: string, spreadsheetId: string, options: {
+    // substreams options
     outputModule?: string,
     substreamsEndpoint?: string,
     startBlock?: string,
     stopBlock?: string,
+    substreamsApiToken?: string,
+    substreamsApiTokenEnvvar?: string
+
+    // sheet sink options
     columns?: string[],
     addHeaderRow?: boolean,
     range?: string,
-    accessToken?: string,
-    refreshToken?: string,
-    credentials?: string,
-    substreamsApiToken?: string,
-    substreamsApiTokenEnvvar?: string
+    credentials?: Credentials,
 } = {}) {
     // User params
     const outputModule = options.outputModule ?? DEFAULT_OUTPUT_MODULE
@@ -43,13 +46,10 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     if ( !outputModule ) throw new Error('[output-module] is required')
     if ( !spreadsheetId ) throw new Error('[spreadsheet-id] is required')
     if ( !api_token ) throw new Error('[substreams-api-token] is required')
+    if ( !options.credentials ) throw new Error('[credentials] is required')
     
     // Authenticate Google Sheets
-    const sheets = await handle_google_authentication({
-        accessToken: options.accessToken,
-        refreshToken: options.refreshToken,
-        credentials: options.credentials
-    })
+    const sheets = await authenticateGoogle(options.credentials)
 
     // Initialize Substreams
     const substreams = new Substreams(outputModule, {
@@ -81,6 +81,14 @@ export async function run(spkg: string, spreadsheetId: string, options: {
         logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
     })
 
+    substreams.on('end' as any, async (cursor: string, clock: Clock) => {
+        // Add header row if not exists
+        if ( addHeaderRow ) {
+            await insertRows(sheets, spreadsheetId, range + '!1:1', [columns])
+            logger.info('addHeaderRow', {columns, spreadsheetId})
+        }
+    });
+
     // start streaming Substream
     logger.info('start', {
         host: substreamsEndpoint,
@@ -88,14 +96,8 @@ export async function run(spkg: string, spreadsheetId: string, options: {
         startBlockNum: options.startBlock,
         stopBlockNum: options.stopBlock,
     })
-
-    await substreams.start(modules)
-
-    // Add header row if not exists
-    if ( addHeaderRow ) {
-        await insertRows(sheets, spreadsheetId, range + '!1:1', [columns])
-        logger.info('addHeaderRow', {columns, spreadsheetId})
-    }
+    substreams.start(modules)
+    return substreams;
 }
 
 export async function list(spkg: string) {
@@ -106,24 +108,16 @@ export async function list(spkg: string) {
         if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue
         compatible.push(module.name)
     }
-
-    logger.info('list', {modules: compatible})
-    process.stdout.write(JSON.stringify(compatible))
+    return compatible;
 }
 
-export async function create(options: {
-    accessToken?: string,
-    refreshToken?: string,
-    credentials?: string,
-}) {
+export async function create(credentials: Credentials) {
     // Authenticate Google Sheets
-    const sheets = await handle_google_authentication(options)
+    const sheets = await authenticateGoogle(credentials)
 
     // Create spreadsheet
     const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax')
     if ( !spreadsheetId ) throw new Error('Could not create spreadsheet')
 
-    // Log spreadsheetId
-    logger.info('create', {spreadsheetId})
-    process.stdout.write(`Your spreadsheet is available at:\nhttps://docs.google.com/spreadsheets/d/${spreadsheetId}/edit\n`)
+    return spreadsheetId;
 }
