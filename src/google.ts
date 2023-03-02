@@ -11,15 +11,6 @@ export async function readRange(sheets: Sheets, spreadsheetId: string, range: st
     })
 }
 
-export async function hasHeaderRow(sheets: Sheets, spreadsheetId: string, range: string) {
-    try {
-        const response = await readRange(sheets, spreadsheetId, range + '!1:1')
-        return response.data.values != undefined
-    } catch (e) {
-        return false
-    }
-}
-
 export async function createSpreadsheet(sheets: Sheets, title: string) {
     const response = await sheets.spreadsheets.create({
         fields: 'spreadsheetId',

@@ -1,6 +1,6 @@
 import { Substreams, download } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
-import { createSpreadsheet, formatRow, hasHeaderRow, insertRows } from './src/google'
+import { createSpreadsheet, formatRow, insertRows } from './src/google'
 import { handle_google_authentication } from './src/auth'
 import { logger } from './src/logger'
 
@@ -12,7 +12,7 @@ export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
-export const DEFAULT_COLUMNS = ['timestamp', 'block_num']
+export const DEFAULT_COLUMNS = []
 export const DEFAULT_ADD_HEADER_ROW = true
 export const DEFAULT_RANGE = 'Sheet1'
 
@@ -33,15 +33,14 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     // User params
     const outputModule = options.outputModule ?? DEFAULT_OUTPUT_MODULE
     const substreamsEndpoint = options.substreamsEndpoint ?? DEFAULT_SUBSTREAMS_ENDPOINT
-    const columns = options.columns ?? DEFAULT_COLUMNS
     const addHeaderRow = options.addHeaderRow ?? DEFAULT_ADD_HEADER_ROW
     const range = options.range ?? DEFAULT_RANGE
     const api_token_envvar = options.substreamsApiTokenEnvvar ?? DEFAULT_API_TOKEN_ENV
     const api_token = options.substreamsApiToken ?? process.env[api_token_envvar]
+    let columns = options.columns ?? DEFAULT_COLUMNS
 
     if ( !range ) throw new Error('[range] is required')
     if ( !outputModule ) throw new Error('[output-module] is required')
-    if ( !columns.length ) throw new Error('[columns] is empty')
     if ( !spreadsheetId ) throw new Error('[spreadsheet-id] is required')
     if ( !api_token ) throw new Error('[substreams-api-token] is required')
     
@@ -51,14 +50,6 @@ export async function run(spkg: string, spreadsheetId: string, options: {
         refreshToken: options.refreshToken,
         credentials: options.credentials
     })
-    
-    // Add header row if not exists
-    if ( addHeaderRow ) {
-        if ( !await hasHeaderRow(sheets, spreadsheetId, range) ) {
-            await insertRows(sheets, spreadsheetId, range, [columns])
-            logger.info('addHeaderRow', {columns, spreadsheetId})
-        }
-    }
 
     // Initialize Substreams
     const substreams = new Substreams(outputModule, {
@@ -81,6 +72,9 @@ export async function run(spkg: string, spreadsheetId: string, options: {
 
         const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
         const databaseChanges = parseDatabaseChanges(decoded, clock)
+
+        // If no columns specified, determine from the returned data as we'll include all fields
+        if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
         const rows = databaseChanges.map(changes => formatRow(changes, columns))
 
         await insertRows(sheets, spreadsheetId, range, rows)
@@ -96,6 +90,12 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     })
 
     await substreams.start(modules)
+
+    // Add header row if not exists
+    if ( addHeaderRow === true ) {
+        await insertRows(sheets, spreadsheetId, range + '!1:1', [columns])
+        logger.info('addHeaderRow', {columns, spreadsheetId})
+    }
 }
 
 export async function list(spkg: string) {
@@ -125,5 +125,5 @@ export async function create(options: {
 
     // Log spreadsheetId
     logger.info('create', {spreadsheetId})
-    process.stdout.write(`Your spreadsheet is available at https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit\n`)
+    process.stdout.write(`Your spreadsheet is available at:\nhttps://docs.google.com/spreadsheets/d/${spreadsheetId}/edit\n`)
 }
