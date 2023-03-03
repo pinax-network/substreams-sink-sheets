@@ -3,10 +3,10 @@ import { sheets_v4 } from 'googleapis'
 type Sheets = sheets_v4.Sheets;
 
 export async function readRange(sheets: Sheets, spreadsheetId: string, range: string) {
-    return sheets.spreadsheets.values.get({
+    return (await sheets.spreadsheets.values.get({
         spreadsheetId,
         range,
-    })
+    })).data
 }
 
 export async function createSpreadsheet(sheets: Sheets, title: string) {
@@ -15,6 +15,20 @@ export async function createSpreadsheet(sheets: Sheets, title: string) {
     }, { body: JSON.stringify({ properties: { title }}) })
 
     return response.data.spreadsheetId
+}
+
+export async function insertHeaderRow(sheets: Sheets, spreadsheetId: string, sheet: string, headers: string[]) {
+    const previousHeaderRowValues = await readRange(sheets, spreadsheetId, sheet + '!1:1')
+
+    if ( !previousHeaderRowValues.values || JSON.stringify(previousHeaderRowValues.values[0]) !== JSON.stringify(headers) ) {
+        return insertRows(sheets, spreadsheetId, {
+            sheetId: await getSheetId(sheets, spreadsheetId, sheet),
+            startRowIndex: 0,
+            endRowIndex: 1
+        }, [headers])
+    }
+
+    return null
 }
 
 export async function appendRows(sheets: Sheets, spreadsheetId: string, range: string, rows: string[][]) {

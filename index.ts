@@ -1,7 +1,7 @@
 import PQueue from 'p-queue'
 import { Substreams, download, Clock } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
-import { createSpreadsheet, formatRow, appendRows, insertRows, getSheetId } from './src/google'
+import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google'
 import { authenticateGoogle, Credentials } from './src/auth'
 import { logger } from './src/logger'
 
@@ -92,12 +92,8 @@ export async function run(spkg: string, spreadsheetId: string, options: {
 
     substreams.on('end' as any, async (cursor: string, clock: Clock) => {
         if ( addHeaderRow ) {
-            await insertRows(sheets, spreadsheetId, {
-                sheetId: await getSheetId(sheets, spreadsheetId, range),
-                startRowIndex: 0,
-                endRowIndex: 1
-            }, [columns])
-            logger.info('insertRows for header', {columns, spreadsheetId})
+            if ( await insertHeaderRow(sheets, spreadsheetId, range, columns) )
+                logger.info('insertHeaderRow', {columns, spreadsheetId})
         }
     })
 
