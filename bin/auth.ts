@@ -1,5 +1,5 @@
-import fs from "fs";
-import { Credentials, ServiceCredentials } from "../src/auth";
+import fs from 'fs'
+import { Credentials, ServiceCredentials } from '../src/auth'
 
 export async function parseServiceCredentials(json_file_url: string): Promise<ServiceCredentials> {
     // handle as URL
@@ -23,8 +23,10 @@ export async function handleCredentials(options: any): Promise<Credentials> {
         access_token: options.accessToken,
         refresh_token: options.refreshToken,
     }
+
     if ( options.serviceAccountFile ) {
-        credentials = await parseServiceCredentials(options.serviceAccountFile);
+        credentials = await parseServiceCredentials(options.serviceAccountFile)
     }
-    return credentials;
+
+    return credentials
 }

@@ -16,6 +16,7 @@ export async function authenticateOAuth2(credentials: Credentials) {
 
     const auth = new google.auth.OAuth2()
     auth.setCredentials(credentials)
+
     return google.sheets({ version: 'v4', auth})
 }
 
@@ -25,8 +26,9 @@ export async function authenticateGoogle(credentials: Credentials ) {
         return authenticateServiceAccount(credentials)
     // OAuth2 Credentials
     } else if ( credentials.access_token && credentials.refresh_token ) {
-        return authenticateOAuth2(credentials);
+        return authenticateOAuth2(credentials)
     }
+
     throw new Error('Google OAuth2 tokens or credentials file is required')
 }
 
@@ -39,6 +41,7 @@ export async function authenticateServiceAccount(credentials: ServiceCredentials
         key: credentials.private_key,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
     })
+
     return google.sheets({ version: 'v4', auth})
 }
 

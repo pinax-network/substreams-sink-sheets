@@ -2,8 +2,8 @@
 
 import { Command } from 'commander'
 import { run, list, create } from '../index'
-import { logger } from "../src/logger"
-import { handleCredentials } from "./auth";
+import { logger } from '../src/logger'
+import { handleCredentials } from './auth'
 import pkg from '../package.json'
 import {
     DEFAULT_API_TOKEN_ENV,
@@ -41,9 +41,9 @@ program.command('run')
     .option('--substreams-api-token <string>', 'API token for the substream endpoint')
     .option('--substreams-api-token-envvar <string>', 'Environnement variable name of the API token for the substream endpoint', DEFAULT_API_TOKEN_ENV)
     .action(async (spkg: string, spreadsheetId: string, options: any) => {
-        const credentials = await handleCredentials(options);
-        options['credentials'] = credentials;
-        await run(spkg, spreadsheetId, options);
+        const credentials = await handleCredentials(options)
+        options['credentials'] = credentials
+        await run(spkg, spreadsheetId, options)
     })
 
 program.command('list')
@@ -51,7 +51,7 @@ program.command('list')
     .description('List all compatible output modules for a given Substreams package')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .action(async spkg => {
-        const modules = await list(spkg);
+        const modules = await list(spkg)
         logger.info('list', {modules})
         process.stdout.write(JSON.stringify(modules) + '\n')
     })
@@ -63,13 +63,13 @@ program.command('create')
     .option('--refresh-token <string>', 'Google OAuth refresh token')
     .option('--service-account-file <string>', 'Google Service account keys JSON file')
     .action(async (options: any) => {
-        const credentials = await handleCredentials(options);
-        const spreadsheetId = await create(credentials);
+        const credentials = await handleCredentials(options)
+        const spreadsheetId = await create(credentials)
         logger.info('create', {spreadsheetId})
         process.stdout.write(JSON.stringify({
             spreadsheetId,
             url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
-        }) + '\n');
+        }) + '\n')
     })
 
 program.command('completion').description('Generate the autocompletion script for the specified shell')

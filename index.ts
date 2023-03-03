@@ -1,6 +1,7 @@
+import PQueue from 'p-queue'
 import { Substreams, download, Clock } from 'substreams'
 import { parseDatabaseChanges } from './src/database_changes'
-import { createSpreadsheet, formatRow, insertRows } from './src/google'
+import { createSpreadsheet, formatRow, appendRows, insertRows, getSheetId } from './src/google'
 import { authenticateGoogle, Credentials } from './src/auth'
 import { logger } from './src/logger'
 
@@ -10,6 +11,8 @@ export * from './src/auth'
 
 import * as dotenv from 'dotenv'
 dotenv.config()
+
+const TIMEOUT = 1000 // rate limit on Google API is 100 requests per 100 seconds
 export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
@@ -66,7 +69,13 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     const DatabaseChanges = registry.findMessage(MESSAGE_TYPE_NAME)
     if ( !DatabaseChanges ) throw new Error(`Could not find [${MESSAGE_TYPE_NAME}] message type`)
 
-    substreams.on('mapOutput', async (output, clock) => {
+    let count = 0
+    const queue = new PQueue({concurrency: 1, timeout: TIMEOUT})
+    queue.on('active', () => {
+        logger.info(`Working on item #${++count} / Size: ${queue.size} / Pending: ${queue.pending}`)
+    })
+
+    substreams.on('mapOutput', async (output, clock: Clock) => {
         // Handle map operations
         if ( !output.data.mapOutput.typeUrl.match(MESSAGE_TYPE_NAME) ) return
 
@@ -77,17 +86,21 @@ export async function run(spkg: string, spreadsheetId: string, options: {
         if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
         const rows = databaseChanges.map(changes => formatRow(changes, columns))
 
-        await insertRows(sheets, spreadsheetId, range, rows)
-        logger.info('insertRows', {spreadsheetId, range, rows: rows.length})
+        queue.add(() => appendRows(sheets, spreadsheetId, range, rows))
+        logger.info('appendRows added to queue', {spreadsheetId, range, rows: rows.length})
     })
 
     substreams.on('end' as any, async (cursor: string, clock: Clock) => {
-        // Add header row if not exists
+        logger.info('Substream ended:', addHeaderRow)
         if ( addHeaderRow ) {
-            await insertRows(sheets, spreadsheetId, range + '!1:1', [columns])
+            await insertRows(sheets, spreadsheetId, {
+                sheetId: await getSheetId(sheets, spreadsheetId, range),
+                startRowIndex: 0,
+                endRowIndex: 1
+            }, [columns])
             logger.info('addHeaderRow', {columns, spreadsheetId})
         }
-    });
+    })
 
     // start streaming Substream
     logger.info('start', {
@@ -97,7 +110,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
         stopBlockNum: options.stopBlock,
     })
     substreams.start(modules)
-    return substreams;
+    return substreams
 }
 
 export async function list(spkg: string) {
@@ -108,7 +121,8 @@ export async function list(spkg: string) {
         if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue
         compatible.push(module.name)
     }
-    return compatible;
+
+    return compatible
 }
 
 export async function create(credentials: Credentials) {
@@ -119,5 +133,5 @@ export async function create(credentials: Credentials) {
     const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax')
     if ( !spreadsheetId ) throw new Error('Could not create spreadsheet')
 
-    return spreadsheetId;
+    return spreadsheetId
 }
