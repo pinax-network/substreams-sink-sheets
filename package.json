@@ -36,7 +36,8 @@
     "dependencies": {
         "commander": "10.x",
         "dotenv": "16.x",
-        "googleapis": "111.x",
+        "googleapis": "112.x",
+        "p-queue": "^6.6.2",
         "substreams": "0.3.x",
         "winston": "3.x"
     },
