@@ -70,9 +70,9 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     if ( !DatabaseChanges ) throw new Error(`Could not find [${MESSAGE_TYPE_NAME}] message type`)
 
     let count = 0
-    const queue = new PQueue({concurrency: 1, timeout: TIMEOUT})
+    const queue = new PQueue({ concurrency: 1, intervalCap: 1, interval: TIMEOUT })
     queue.on('active', () => {
-        logger.info(`Working on item #${++count} / Size: ${queue.size} / Pending: ${queue.pending}`)
+        logger.info(`Working on item #${++count} / Queue size: ${queue.size}`)
     })
 
     substreams.on('mapOutput', async (output, clock: Clock) => {
@@ -91,14 +91,13 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     })
 
     substreams.on('end' as any, async (cursor: string, clock: Clock) => {
-        logger.info('Substream ended:', addHeaderRow)
         if ( addHeaderRow ) {
             await insertRows(sheets, spreadsheetId, {
                 sheetId: await getSheetId(sheets, spreadsheetId, range),
                 startRowIndex: 0,
                 endRowIndex: 1
             }, [columns])
-            logger.info('addHeaderRow', {columns, spreadsheetId})
+            logger.info('insertRows for header', {columns, spreadsheetId})
         }
     })
 
