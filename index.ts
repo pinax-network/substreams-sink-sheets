@@ -1,6 +1,6 @@
 import PQueue from 'p-queue'
 import { Substreams, download, Clock } from 'substreams'
-import { parseDatabaseChanges } from './src/database_changes'
+import { parseDatabaseChanges, getDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google'
 import { authenticateGoogle, Credentials } from './src/auth'
 import { logger } from './src/logger'
@@ -13,7 +13,8 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 const TIMEOUT = 1000 // rate limit on Google API is 100 requests per 100 seconds
-export const MESSAGE_TYPE_NAME = 'sf.substreams.sink.database.v1.DatabaseChanges'
+export const MESSAGE_TYPE_NAMES = ['sf.substreams.sink.database.v1.DatabaseChanges', 'sf.substreams.database.v1.DatabaseChanges']
+export const MESSAGE_TYPE_NAME = MESSAGE_TYPE_NAMES[0]
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
@@ -66,8 +67,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     const { modules, registry } = await download(spkg)
 
     // Find Protobuf message types from registry
-    const DatabaseChanges = registry.findMessage(MESSAGE_TYPE_NAME)
-    if ( !DatabaseChanges ) throw new Error(`Could not find [${MESSAGE_TYPE_NAME}] message type`)
+    const DatabaseChanges = getDatabaseChanges(registry);
 
     let count = 0
     const queue = new PQueue({ concurrency: 1, intervalCap: 1, interval: TIMEOUT })
@@ -77,7 +77,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
 
     substreams.on('mapOutput', async (output, clock: Clock) => {
         // Handle map operations
-        if ( !output.data.mapOutput.typeUrl.match(MESSAGE_TYPE_NAME) ) return
+        if ( !MESSAGE_TYPE_NAMES.includes(output.data.mapOutput.typeUrl) ) return
 
         const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
         const databaseChanges = parseDatabaseChanges(decoded, clock)
@@ -112,9 +112,11 @@ export async function list(spkg: string) {
     const { modules } = await download(spkg)
     const compatible = []
 
-    for ( const module of modules.modules ) {
-        if ( !module.output?.type.includes(MESSAGE_TYPE_NAME) ) continue
-        compatible.push(module.name)
+    for ( const {name, output} of modules.modules ) {
+        if ( !output ) continue
+        logger.info('module', {name, output});
+        if ( !MESSAGE_TYPE_NAMES.includes(output.type.replace("proto:", "")) ) continue
+        compatible.push(name);
     }
 
     return compatible

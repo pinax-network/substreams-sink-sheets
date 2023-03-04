@@ -1,4 +1,5 @@
 import { Clock } from 'substreams'
+import { MESSAGE_TYPE_NAME, MESSAGE_TYPE_NAMES } from '..';
 
 export interface DatabaseChanges {
     tableChanges: TableChange[];
@@ -23,6 +24,20 @@ export interface Field {
     name: string;
     newValue: string;
     oldValue: string;
+}
+
+// Find Protobuf message types from registry
+export function getDatabaseChanges(registry: any) {
+    console.log({registry})
+    for ( const message of MESSAGE_TYPE_NAMES ) {
+        try {
+            return registry.findMessage(message);
+
+        } catch (error) {
+            // ignore
+        }
+    }
+    throw new Error(`Could not find [${MESSAGE_TYPE_NAME}] message type`)
 }
 
 export function parseDatabaseChanges(decoded: DatabaseChanges, clock: Clock) {
