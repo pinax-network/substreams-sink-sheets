@@ -28,7 +28,6 @@ export interface Field {
 
 // Find Protobuf message types from registry
 export function getDatabaseChanges(registry: any) {
-    console.log({registry})
     for ( const message of MESSAGE_TYPE_NAMES ) {
         try {
             return registry.findMessage(message);
