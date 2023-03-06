@@ -1,5 +1,5 @@
 import { Clock } from 'substreams'
-import { MESSAGE_TYPE_NAME, MESSAGE_TYPE_NAMES } from '..';
+import { MESSAGE_TYPE_NAME, MESSAGE_TYPE_NAMES } from '../index'
 
 export interface DatabaseChanges {
     tableChanges: TableChange[];
@@ -30,12 +30,12 @@ export interface Field {
 export function getDatabaseChanges(registry: any) {
     for ( const message of MESSAGE_TYPE_NAMES ) {
         try {
-            return registry.findMessage(message);
-
+            return registry.findMessage(message)
         } catch (error) {
             // ignore
         }
     }
+
     throw new Error(`Could not find [${MESSAGE_TYPE_NAME}] message type`)
 }
 

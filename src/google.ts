@@ -18,9 +18,9 @@ export async function createSpreadsheet(sheets: Sheets, title: string) {
 }
 
 export async function insertHeaderRow(sheets: Sheets, spreadsheetId: string, sheet: string, headers: string[]) {
-    const previousHeaderRowValues = await readRange(sheets, spreadsheetId, sheet + '!1:1')
+    const previousHeaderRow = await readRange(sheets, spreadsheetId, sheet + '!1:1')
 
-    if ( !previousHeaderRowValues.values || JSON.stringify(previousHeaderRowValues.values[0]) !== JSON.stringify(headers) ) {
+    if ( !previousHeaderRow.values || JSON.stringify(previousHeaderRow.values[0]) !== JSON.stringify(headers) ) {
         return insertRows(sheets, spreadsheetId, {
             sheetId: await getSheetId(sheets, spreadsheetId, sheet),
             startRowIndex: 0,

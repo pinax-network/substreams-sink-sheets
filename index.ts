@@ -67,7 +67,7 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     const { modules, registry } = await download(spkg)
 
     // Find Protobuf message types from registry
-    const DatabaseChanges = getDatabaseChanges(registry);
+    const DatabaseChanges = getDatabaseChanges(registry)
 
     let count = 0
     const queue = new PQueue({ concurrency: 1, intervalCap: 1, interval: TIMEOUT })
@@ -114,9 +114,9 @@ export async function list(spkg: string) {
 
     for ( const {name, output} of modules.modules ) {
         if ( !output ) continue
-        logger.info('module', {name, output});
-        if ( !MESSAGE_TYPE_NAMES.includes(output.type.replace("proto:", "")) ) continue
-        compatible.push(name);
+        logger.info('module', {name, output})
+        if ( !MESSAGE_TYPE_NAMES.includes(output.type.replace('proto:', '')) ) continue
+        compatible.push(name)
     }
 
     return compatible

@@ -4,12 +4,7 @@
 [<img alt="npm" src="https://img.shields.io/npm/v/substreams-sink-sheets.svg?style=for-the-badge&color=CB0001&logo=npm" height="20">](https://www.npmjs.com/package/substreams-sink-sheets)
 [<img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/pinax-network/substreams-sink-sheets/ci.yml?branch=main&style=for-the-badge" height="20">](https://github.com/pinax-network/substreams-sink-sheets/actions?query=branch%3Amain)
 
-> `substreams-sink-sheets` pushes [Substreams DatabaseChanges](https://github.com/streamingfast/substreams-database-change/blob/develop/proto/substreams/sink/database/v1/database.proto) map `db_out` outputs to [Google Sheets](https://developers.google.com/sheets/api/reference/rest/).
-
-### Further resources
-
-- [Substreams documentation](https://substreams.streamingfast.io)
-- [Substreams `DatabaseChanges`](https://github.com/streamingfast/substreams-database-change)
+> `substreams-sink-sheets` pushes [Substreams DatabaseChanges](https://github.com/streamingfast/substreams-database-change/blob/develop/proto/substreams/sink/database/v1/database.proto) map outputs to [Google Sheets](https://developers.google.com/sheets/api/reference/rest/).
 
 ## CLI
 [**Use pre-built binaries**](https://github.com/pinax-network/substreams-sink-sheets/releases)
@@ -22,22 +17,42 @@
 $ npm install -g substreams-sink-sheets
 ```
 
-**Run**
+**Create new Google Sheets spreadsheet**
 ```console
-$ substreams-sink-sheets run [options] <spkg>
+$ substreams-sink-sheets create [options]
 ```
 
-**List compatible modules for a given Substream**
+**Stream substream output to Google Sheets**
 ```console
-$ substreams-sink-sheets list <spkg>
+$ substreams-sink-sheets run [options] <spkg> <spreadsheet-id>
+```
+
+The `spreadsheet-id` can be found in the URL of the Google Sheets document: https://docs.google.com/spreadsheets/d/**${ID}**/edit 
+
+**List compatible output modules for a given substream**
+```console
+$ substreams-sink-sheets list [options] <spkg>
 ```
 
 **Help**
 ```console
-$ substreams-sink-sheets run -h
+$ substreams-sink-sheets <run|create|list> -h
 ```
 
+## Examples
+
 ## Features
+
+### Google API OAuth2 and service account authentication
+
+Authenticate to Google Sheets using either OAuth2 tokens or a service account credential file.
+
+First, create a new project from the [Google Cloud developer console](https://console.cloud.google.com) or select an existing one.
+
+#### OAuth2
+
+*TODO*
+
 - Consume `*.spkg` from:
   - [x] Load URL or IPFS
   - [ ] Read from `*.spkg` local filesystem
@@ -66,7 +81,6 @@ $ substreams-sink-sheets run -h
   - [ ] DELETE
 - Rate limiting
   - [x] 1 request per second (Google rate limit is 100 requests per 100 seconds)
-  - [ ] Batch updates
 - Winston logger
   - `NODE_ENV='production'` to silent logging
 
@@ -75,3 +89,8 @@ $ substreams-sink-sheets run -h
 - https://developers.google.com/sheets/api/guides/concepts#cell
 - https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
 - https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append#insertdataoption
+
+## Further resources
+
+- [Substreams documentation](https://substreams.streamingfast.io)
+- [Substreams `DatabaseChanges`](https://github.com/streamingfast/substreams-database-change)
