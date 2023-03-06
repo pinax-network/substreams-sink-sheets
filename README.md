@@ -27,7 +27,7 @@ $ substreams-sink-sheets create [options]
 $ substreams-sink-sheets run [options] <spkg> <spreadsheet-id>
 ```
 
-The `spreadsheet-id` can be found in the URL of the Google Sheets document: https://docs.google.com/spreadsheets/d/**${ID}**/edit 
+The `spreadsheet-id` can be found in the URL of the Google Sheets document: `https://docs.google.com/spreadsheets/d/${ID}/edit `
 
 **List compatible output modules for a given substream**
 ```console
