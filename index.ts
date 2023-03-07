@@ -76,8 +76,8 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     })
 
     substreams.on('mapOutput', async (output, clock: Clock) => {
-        // Handle map operations
-        if ( !MESSAGE_TYPE_NAMES.includes(output.data.mapOutput.typeUrl) ) return
+        // Handle map operations, type URL is in format `type.googleapis.com/xxx`
+        if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => output.data.mapOutput.typeUrl.match(message)) ) return
 
         const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
         const databaseChanges = parseDatabaseChanges(decoded, clock)
