@@ -1,4 +1,3 @@
-import PQueue from 'p-queue'
 import { Substreams, download, unpack, Clock } from 'substreams'
 import { parseDatabaseChanges, getDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google'
@@ -70,11 +69,19 @@ export async function run(url: string, spreadsheetId: string, options: {
     const { registry } = unpack(spkg)
     const DatabaseChanges = getDatabaseChanges(registry)
 
-    let count = 0
-    const queue = new PQueue({ concurrency: 1, intervalCap: 1, interval: TIMEOUT })
-    queue.on('active', () => {
-        logger.info(`Working on item #${++count} / Queue size: ${queue.size}`)
-    })
+    const rows: string[][] = []
+    let isSubstreamRunning = true; // Semi-colon important here to not mess up the following declaration
+
+    (function pushToSheet() {
+        if ( rows.length ) {
+            appendRows(sheets, spreadsheetId, range, rows)
+            logger.info('Pushed rows to Google Sheet', {spreadsheetId, range, rows: rows.length})
+            rows.length = 0 // Reset the rows queue -> Is there potential race with `substream.on` event (= loss of data) ?
+        }
+
+        if ( isSubstreamRunning )
+            setTimeout(pushToSheet, TIMEOUT) // TODO: More robust in case of failed push
+    })()
 
     substreams.on('mapOutput', async (output, clock: Clock) => {
         // Handle map operations, type URL is in format `type.googleapis.com/xxx`
@@ -85,13 +92,13 @@ export async function run(url: string, spreadsheetId: string, options: {
 
         // If no columns specified, determine from the returned data as we'll include all fields
         if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
-        const rows = databaseChanges.map(changes => formatRow(changes, columns))
+        rows.push(...databaseChanges.map(changes => formatRow(changes, columns)))
 
-        queue.add(() => appendRows(sheets, spreadsheetId, range, rows))
-        logger.info('appendRows added to queue', {spreadsheetId, range, rows: rows.length})
+        logger.info('Rows added to queue', {spreadsheetId, range, rows: rows.length})
     })
 
     substreams.on('end' as any, async (cursor: string, clock: Clock) => {
+        isSubstreamRunning = false
         if ( addHeaderRow ) {
             if ( await insertHeaderRow(sheets, spreadsheetId, range, columns) )
                 logger.info('insertHeaderRow', {columns, spreadsheetId})
@@ -105,7 +112,13 @@ export async function run(url: string, spreadsheetId: string, options: {
         startBlockNum: options.startBlock,
         stopBlockNum: options.stopBlock,
     })
-    substreams.start()
+
+    try {
+        substreams.start()
+    } catch {
+        isSubstreamRunning = false
+    }
+
     return substreams
 }
 
