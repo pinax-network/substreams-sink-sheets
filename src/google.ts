@@ -90,7 +90,7 @@ export function formatRow(object: {[key: string]: string}, columns: string[]) {
     const items = []
 
     for ( const column of columns ) {
-        const item: string = object[column]
+        const item: string = object[column].toString()
         if ( !item ) items.push('') // if blank, push empty string
         else items.push(item)
     }

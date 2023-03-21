@@ -1,5 +1,5 @@
 import PQueue from 'p-queue'
-import { Substreams, download, Clock } from 'substreams'
+import { Substreams, download, unpack, Clock } from 'substreams'
 import { parseDatabaseChanges, getDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google'
 import { authenticateGoogle, Credentials } from './src/auth'
@@ -17,12 +17,12 @@ export const MESSAGE_TYPE_NAMES = ['sf.substreams.sink.database.v1.DatabaseChang
 export const MESSAGE_TYPE_NAME = MESSAGE_TYPE_NAMES[0]
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
-export const DEFAULT_SUBSTREAMS_ENDPOINT = 'mainnet.eth.streamingfast.io:443'
+export const DEFAULT_SUBSTREAMS_ENDPOINT = 'https://mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = []
 export const DEFAULT_ADD_HEADER_ROW = false
 export const DEFAULT_RANGE = 'Sheet1'
 
-export async function run(spkg: string, spreadsheetId: string, options: {
+export async function run(url: string, spreadsheetId: string, options: {
     // substreams options
     outputModule?: string,
     substreamsEndpoint?: string,
@@ -55,18 +55,19 @@ export async function run(spkg: string, spreadsheetId: string, options: {
     // Authenticate Google Sheets
     const sheets = await authenticateGoogle(options.credentials)
 
+    // Download Substream from URL or IPFS
+    const spkg = await download(url)
+
     // Initialize Substreams
-    const substreams = new Substreams(outputModule, {
+    const substreams = new Substreams(spkg, outputModule, {
         host: substreamsEndpoint,
         startBlockNum: options.startBlock,
         stopBlockNum: options.stopBlock,
         authorization: api_token
     })
 
-    // Download Substream from URL or IPFS
-    const { modules, registry } = await download(spkg)
-
     // Find Protobuf message types from registry
+    const { registry } = unpack(spkg)
     const DatabaseChanges = getDatabaseChanges(registry)
 
     let count = 0
@@ -77,9 +78,9 @@ export async function run(spkg: string, spreadsheetId: string, options: {
 
     substreams.on('mapOutput', async (output, clock: Clock) => {
         // Handle map operations, type URL is in format `type.googleapis.com/xxx`
-        if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => output.data.mapOutput.typeUrl.match(message)) ) return
+        if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => output.data.value.typeUrl.match(message)) ) return
 
-        const decoded = DatabaseChanges.fromBinary(output.data.mapOutput.value) as any    
+        const decoded = DatabaseChanges.fromBinary(output.data.value.value) as any    
         const databaseChanges = parseDatabaseChanges(decoded, clock)
 
         // If no columns specified, determine from the returned data as we'll include all fields
@@ -104,12 +105,13 @@ export async function run(spkg: string, spreadsheetId: string, options: {
         startBlockNum: options.startBlock,
         stopBlockNum: options.stopBlock,
     })
-    substreams.start(modules)
+    substreams.start()
     return substreams
 }
 
-export async function list(spkg: string) {
-    const { modules } = await download(spkg)
+export async function list(url: string) {
+    const spkg = await download(url)
+    const { modules } = unpack(spkg)
     const compatible = []
 
     for ( const {name, output} of modules.modules ) {
