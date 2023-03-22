@@ -31,7 +31,8 @@
     "license": "MIT OR Apache-2.0",
     "scripts": {
         "prepublishOnly": "npm run build",
-        "build": "tsup index.ts bin/cli.ts --dts && pkg ."
+        "build": "tsup index.ts bin/cli.ts --dts",
+        "pkg": "ncc build bin/cli.ts -o build && pkg build/index.js"
     },
     "dependencies": {
         "commander": "10.x",
@@ -43,6 +44,7 @@
     },
     "devDependencies": {
         "@types/node": "*",
+        "@vercel/ncc": "0.36.x",
         "pkg": "5.x",
         "tsup": "6.x",
         "typescript": "*"
