@@ -42,6 +42,7 @@ program.command('run')
     .option('--service-account-file <string>', 'Google Service account keys JSON file')
     .option('--substreams-api-token <string>', 'API token for the substream endpoint')
     .option('--substreams-api-token-envvar <string>', 'Environnement variable name of the API token for the substream endpoint', DEFAULT_API_TOKEN_ENV)
+    .option('--delay-before-start <int>', '[OPERATOR] Amount of time in milliseconds (ms) to wait before starting any internal processes, can be used to perform to maintenance on the pod before actually letting it starts', '0')
     .action(async (spkg: string, spreadsheetId: string, options: any) => {
         const credentials = await handleCredentials(options)
         options['credentials'] = credentials

@@ -8,6 +8,7 @@ export * from './src/google'
 export * from './src/database_changes'
 export * from './src/auth'
 
+import { timeout } from './src/utils'
 import * as dotenv from 'dotenv'
 dotenv.config()
 
@@ -34,6 +35,7 @@ export async function run(url: string, spreadsheetId: string, options: {
     stopBlock?: string,
     substreamsApiToken?: string,
     substreamsApiTokenEnvvar?: string
+    delayBeforeStart?: number,
 
     // sheet sink options
     columns?: string[],
@@ -56,6 +58,9 @@ export async function run(url: string, spreadsheetId: string, options: {
     if ( !spreadsheetId ) throw new Error('[spreadsheet-id] is required')
     if ( !api_token ) throw new Error('[substreams-api-token] is required')
     if ( !options.credentials ) throw new Error('[credentials] is required')
+
+    // delay before start
+    if ( options.delayBeforeStart ) await timeout(Number(options.delayBeforeStart) * 1000);
     
     // Authenticate Google Sheets
     const sheets = await authenticateGoogle(options.credentials)

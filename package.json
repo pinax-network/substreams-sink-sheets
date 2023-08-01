@@ -1,6 +1,6 @@
 {
     "name": "substreams-sink-sheets",
-    "version": "0.2.3",
+    "version": "0.3.1",
     "description": "Substreams Google Sheets sink module",
     "main": "dist/index.js",
     "types": "dist/index.d.js",
@@ -30,20 +30,23 @@
     ],
     "license": "MIT OR Apache-2.0",
     "scripts": {
-        "prepublishOnly": "tsc",
-        "build": "tsc && pkg ."
+        "prepublishOnly": "npm run build",
+        "build": "tsup index.ts bin/cli.ts --dts",
+        "pkg": "ncc build bin/cli.ts -o build && pkg build/index.js"
     },
     "dependencies": {
         "commander": "10.x",
         "dotenv": "16.x",
         "googleapis": "112.x",
-        "p-queue": "6.6.2",
-        "substreams": "0.3.x",
+        "p-queue": "6.x",
+        "substreams": "0.4.x",
         "winston": "3.x"
     },
     "devDependencies": {
-        "@types/p-queue": "^3.2.1",
+        "@types/node": "*",
+        "@vercel/ncc": "0.36.x",
         "pkg": "5.x",
+        "tsup": "6.x",
         "typescript": "*"
     }
 }
