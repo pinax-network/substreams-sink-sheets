@@ -1,5 +1,5 @@
-import { Substreams, download, unpack, Clock } from 'substreams'
-import { parseDatabaseChanges, getDatabaseChanges } from './src/database_changes'
+import { Substreams, download, unpack, Clock, MapModuleOutput, Module_Input_Map, Module_Input_Store } from 'substreams'
+import { DatabaseChanges, parseDatabaseChanges, getDatabaseChanges } from './src/database_changes'
 import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google'
 import { authenticateGoogle, Credentials } from './src/auth'
 import { logger } from './src/logger'
@@ -12,10 +12,14 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 const TIMEOUT = 1000 // rate limit on Google API is 100 requests per 100 seconds
-export const MESSAGE_TYPE_NAMES = ['sf.substreams.sink.database.v1.DatabaseChanges', 'sf.substreams.database.v1.DatabaseChanges']
+export const MESSAGE_TYPE_NAMES = [
+    'sf.substreams.sink.database.v1.DatabaseChanges',
+    'sf.substreams.database.v1.DatabaseChanges'
+]
 export const MESSAGE_TYPE_NAME = MESSAGE_TYPE_NAMES[0]
 export const DEFAULT_API_TOKEN_ENV = 'SUBSTREAMS_API_TOKEN'
 export const DEFAULT_OUTPUT_MODULE = 'db_out'
+export const DEFAULT_OUTPUT_MODULE_PARAMS = ''
 export const DEFAULT_SUBSTREAMS_ENDPOINT = 'https://mainnet.eth.streamingfast.io:443'
 export const DEFAULT_COLUMNS = []
 export const DEFAULT_ADD_HEADER_ROW = false
@@ -24,6 +28,7 @@ export const DEFAULT_RANGE = 'Sheet1'
 export async function run(url: string, spreadsheetId: string, options: {
     // substreams options
     outputModule?: string,
+    outputModuleParams?: string,
     substreamsEndpoint?: string,
     startBlock?: string,
     stopBlock?: string,
@@ -38,6 +43,7 @@ export async function run(url: string, spreadsheetId: string, options: {
 } = {}) {
     // User params
     const outputModule = options.outputModule ?? DEFAULT_OUTPUT_MODULE
+    const outputModuleParams = options.outputModuleParams ?? DEFAULT_OUTPUT_MODULE_PARAMS
     const substreamsEndpoint = options.substreamsEndpoint ?? DEFAULT_SUBSTREAMS_ENDPOINT
     const addHeaderRow = options.addHeaderRow ?? DEFAULT_ADD_HEADER_ROW
     const range = options.range ?? DEFAULT_RANGE
@@ -83,18 +89,20 @@ export async function run(url: string, spreadsheetId: string, options: {
             setTimeout(pushToSheet, TIMEOUT) // TODO: More robust in case of failed push
     })()
 
-    substreams.on('mapOutput', async (output, clock: Clock) => {
+    substreams.on('output', async (output: MapModuleOutput, clock: Clock) => {
         // Handle map operations, type URL is in format `type.googleapis.com/xxx`
-        if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => output.data.value.typeUrl.match(message)) ) return
+        if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => output.mapOutput?.typeUrl.match(message)) ) return
 
-        const decoded = DatabaseChanges.fromBinary(output.data.value.value) as any    
+        const decoded = DatabaseChanges.fromBinary(output.mapOutput?.value) as DatabaseChanges
         const databaseChanges = parseDatabaseChanges(decoded, clock)
 
-        // If no columns specified, determine from the returned data as we'll include all fields
-        if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
-        rows.push(...databaseChanges.map(changes => formatRow(changes, columns)))
+        if ( databaseChanges.length ) {
+            // If no columns specified, determine from the returned data as we'll include all fields
+            if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
+            rows.push(...databaseChanges.map(changes => formatRow(changes, columns)))
 
-        logger.info('Rows added to queue', {spreadsheetId, range, rows: rows.length})
+            logger.info('Rows added to queue', {spreadsheetId, range, rows: rows.length})
+        }
     })
 
     substreams.on('end' as any, async (cursor: string, clock: Clock) => {
@@ -108,12 +116,41 @@ export async function run(url: string, spreadsheetId: string, options: {
     // start streaming Substream
     logger.info('start', {
         host: substreamsEndpoint,
-        outputModule: outputModule,
+        outputModule,
+        outputModuleParams,
         startBlockNum: options.startBlock,
-        stopBlockNum: options.stopBlock,
+        stopBlockNum: options.stopBlock
     })
 
     try {
+        if ( outputModuleParams !== '' ) {
+            const outModule = Object.values(substreams.modules.modules).find( m => m.name === outputModule )
+            if ( !outModule ) throw new Error('Could not find outputModule in package')
+
+            const mapOrStoreModule = outModule.inputs.find( i => i.input.case === 'map' || i.input.case === 'store' )?.input.value as Module_Input_Map | Module_Input_Store | undefined
+            const isParamModule = outModule.inputs.find( i => i.input.case === 'params' ) !== undefined
+
+            /* Check if the output module is based on a map or store to pass the parameters to the right module
+            Example :
+                {
+                    "1": {
+                        ...
+                        "inputs": [
+                            // If 'db_out' is the output module, we need to pass the params to 'map_transfers_from'
+                            { "map": { "moduleName": "map_transfers_from" } }
+                        ],
+                        "name":"db_out",
+                        ...
+                    }
+                }
+            */
+            let paramModule = outputModule
+            if ( !isParamModule && mapOrStoreModule)
+                paramModule = mapOrStoreModule?.moduleName
+
+            substreams.param(outputModuleParams, paramModule)
+        }
+
         substreams.start()
     } catch {
         isSubstreamRunning = false

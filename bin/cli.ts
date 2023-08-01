@@ -8,6 +8,7 @@ import pkg from '../package.json'
 import {
     DEFAULT_API_TOKEN_ENV,
     DEFAULT_OUTPUT_MODULE,
+    DEFAULT_OUTPUT_MODULE_PARAMS,
     DEFAULT_SUBSTREAMS_ENDPOINT,
     DEFAULT_COLUMNS,
     DEFAULT_ADD_HEADER_ROW,
@@ -29,6 +30,7 @@ program.command('run')
     .argument('<spkg>', 'URL or IPFS hash of Substreams package')
     .argument('<spreadsheet-id>', 'ID of Google Sheets spreadsheet to write output to (i.e. https://docs.google.com/spreadsheets/d/{ID}/edit)')
     .option('-m --output-module <string>', 'Name of the output module (declared in the manifest)', DEFAULT_OUTPUT_MODULE)
+    .option('-p --output-module-params <string>', 'Parameters to be sent for the output module', DEFAULT_OUTPUT_MODULE_PARAMS)
     .option('-e --substreams-endpoint <string>', 'Substreams gRPC endpoint to stream data from', DEFAULT_SUBSTREAMS_ENDPOINT)
     .option('-s --start-block <int>', 'Start block to stream from (defaults to -1, which means the initialBlock of the first module you are streaming)')
     .option('-t --stop-block <string>', 'Stop block to end stream at, inclusively')
