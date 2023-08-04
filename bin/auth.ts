@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { Credentials, ServiceCredentials } from '../src/auth'
+import { Credentials, ServiceCredentials } from '../src/auth.js'
 
 export async function parseServiceCredentials(json_file_url: string): Promise<ServiceCredentials> {
     // handle as URL

@@ -1,5 +1,5 @@
-import { Clock } from 'substreams'
-import { MESSAGE_TYPE_NAME, MESSAGE_TYPE_NAMES } from '../index'
+import { Clock } from '@substreams/core/proto'
+import { MESSAGE_TYPE_NAME, MESSAGE_TYPE_NAMES } from '../index.js'
 
 export interface DatabaseChanges {
     tableChanges: TableChange[];

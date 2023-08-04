@@ -1,10 +1,28 @@
 #!/usr/bin/env node
 
+/*import { commander, logger } from "substreams-sink";
+import { action } from "../index.js"
+import pkg from "../package.json" assert { type: "json" };
+
+// Custom user options interface
+export interface ActionOptions extends commander.RunOptions {
+    // Add custom options here
+}
+
+const program = commander.program(pkg);
+const command = commander.run(program, pkg);
+
+// Add command options here
+
+logger.setName(pkg.name);
+command.action(action);
+program.parse();*/
+
 import { Command } from 'commander'
-import { run, list, create } from '../index'
-import { logger } from '../src/logger'
-import { handleCredentials } from './auth'
-import pkg from '../package.json'
+import { run, list, create } from '../index.js'
+import { logger } from '../src/logger.js'
+import { handleCredentials } from './auth.js'
+import pkg from '../package.json' assert { type: "json" }
 import {
     DEFAULT_API_TOKEN_ENV,
     DEFAULT_OUTPUT_MODULE,
@@ -13,7 +31,7 @@ import {
     DEFAULT_COLUMNS,
     DEFAULT_ADD_HEADER_ROW,
     DEFAULT_RANGE,
-} from '../index'
+} from '../index.js'
 
 const program = new Command()
 

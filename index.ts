@@ -1,14 +1,17 @@
-import { Substreams, download, unpack, Clock, MapModuleOutput, Module_Input_Map, Module_Input_Store } from 'substreams'
-import { DatabaseChanges, parseDatabaseChanges, getDatabaseChanges } from './src/database_changes'
-import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google'
-import { authenticateGoogle, Credentials } from './src/auth'
-import { logger } from './src/logger'
+import { applyParams, createModuleHashHex, createRegistry, createRequest, getModuleOrThrow, getModules } from '@substreams/core'
+import { Clock, Module_Input_Store, Module_Input_Map } from '@substreams/core/proto'
+import { readPackage } from '@substreams/manifest'
+import { BlockEmitter, createDefaultTransport } from '@substreams/node'
+import { DatabaseChanges, parseDatabaseChanges, getDatabaseChanges } from './src/database_changes.js'
+import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google.js'
+import { authenticateGoogle, Credentials } from './src/auth.js'
+import { logger } from './src/logger.js'
 
-export * from './src/google'
-export * from './src/database_changes'
-export * from './src/auth'
+export * from './src/google.js'
+export * from './src/database_changes.js'
+export * from './src/auth.js'
 
-import { timeout } from './src/utils'
+import { timeout } from './src/utils.js'
 import * as dotenv from 'dotenv'
 dotenv.config()
 
@@ -66,39 +69,79 @@ export async function run(url: string, spreadsheetId: string, options: {
     const sheets = await authenticateGoogle(options.credentials)
 
     // Download Substream from URL or IPFS
-    const spkg = await download(url)
+    const spkg = await readPackage(url)
+
+    if ( outputModuleParams !== '' ) {
+        const outModule = getModuleOrThrow(getModules(spkg), outputModule)// Object.values(spkg.modules.modules).find( m => m.name === outputModule )
+        //if ( !outModule ) throw new Error('Could not find outputModule in package')
+
+        const mapOrStoreInput = outModule.inputs.find( i => i.input.case === 'map' || i.input.case === 'store' )?.input.value as Module_Input_Map | Module_Input_Store | undefined
+        const isParamModule = outModule.inputs.find( i => i.input.case === 'params' ) !== undefined
+
+        /* Check if the output module is based on a map or store to pass the parameters to the right module
+        Example :
+            {
+                "1": {
+                    ...
+                    "inputs": [
+                        // If 'db_out' is the output module, we need to pass the params to 'map_transfers_from'
+                        { "map": { "moduleName": "map_transfers_from" } }
+                    ],
+                    "name":"db_out",
+                    ...
+                }
+            }
+        */
+        let paramModule = outputModule
+        if ( !isParamModule && mapOrStoreInput)
+            paramModule = mapOrStoreInput?.moduleName
+
+        if ( !spkg.modules?.modules )
+            throw new Error('No modules found in substream package !')
+
+        applyParams([`${paramModule}=${outputModuleParams}`], spkg.modules.modules)
+    }
 
     // Initialize Substreams
-    const substreams = new Substreams(spkg, outputModule, {
-        host: substreamsEndpoint,
-        startBlockNum: options.startBlock,
-        stopBlockNum: options.stopBlock,
-        authorization: api_token
+    const registry = createRegistry(spkg)
+    const headers = new Headers({ 'User-Agent': '@substreams/node' })
+    const transport = createDefaultTransport(substreamsEndpoint, api_token, registry, headers)
+    const request = createRequest({
+        substreamPackage: spkg,
+        outputModule,
+        startBlockNum: options.startBlock as any,
+        stopBlockNum: options.stopBlock as any,
+        productionMode: true,
     })
+    const substreams = new BlockEmitter(transport, request, registry)
 
     // Find Protobuf message types from registry
-    const { registry } = unpack(spkg)
     const DatabaseChanges = getDatabaseChanges(registry)
 
     const rows: string[][] = []
     let isSubstreamRunning = true; // Semi-colon important here to not mess up the following declaration
 
-    (function pushToSheet() {
+    (async function pushToSheet() {
         if ( rows.length ) {
             appendRows(sheets, spreadsheetId, range, rows)
             logger.info('Pushed rows to Google Sheet', {spreadsheetId, range, rows: rows.length})
             rows.length = 0 // Reset the rows queue -> Is there potential race with `substream.on` event (= loss of data) ?
         }
 
-        if ( isSubstreamRunning )
+        if ( isSubstreamRunning ) {
             setTimeout(pushToSheet, TIMEOUT) // TODO: More robust in case of failed push
+        } else if ( addHeaderRow ) {
+            if ( await insertHeaderRow(sheets, spreadsheetId, range, columns) )
+                logger.info('insertHeaderRow', {columns, spreadsheetId})
+        }
     })()
 
-    substreams.on('output', async (output: MapModuleOutput, clock: Clock) => {
+    substreams.on('anyMessage', async (message, cursor: string, clock: Clock) => {
         // Handle map operations, type URL is in format `type.googleapis.com/xxx`
-        if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => output.mapOutput?.typeUrl.match(message)) ) return
+        //if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => out.output.mapOutput?.typeUrl.match(message)) ) return
 
-        const decoded = DatabaseChanges.fromBinary(output.mapOutput?.value) as DatabaseChanges
+        //const decoded = DatabaseChanges.fromBinary(out.output.mapOutput?.value) as DatabaseChanges
+        const decoded = DatabaseChanges.fromJson(message) as DatabaseChanges
         const databaseChanges = parseDatabaseChanges(decoded, clock)
 
         if ( databaseChanges.length ) {
@@ -107,14 +150,6 @@ export async function run(url: string, spreadsheetId: string, options: {
             rows.push(...databaseChanges.map(changes => formatRow(changes, columns)))
 
             logger.info('Rows added to queue', {spreadsheetId, range, rows: rows.length})
-        }
-    })
-
-    substreams.on('end' as any, async (cursor: string, clock: Clock) => {
-        isSubstreamRunning = false
-        if ( addHeaderRow ) {
-            if ( await insertHeaderRow(sheets, spreadsheetId, range, columns) )
-                logger.info('insertHeaderRow', {columns, spreadsheetId})
         }
     })
 
@@ -127,49 +162,17 @@ export async function run(url: string, spreadsheetId: string, options: {
         stopBlockNum: options.stopBlock
     })
 
-    try {
-        if ( outputModuleParams !== '' ) {
-            const outModule = Object.values(substreams.modules.modules).find( m => m.name === outputModule )
-            if ( !outModule ) throw new Error('Could not find outputModule in package')
-
-            const mapOrStoreModule = outModule.inputs.find( i => i.input.case === 'map' || i.input.case === 'store' )?.input.value as Module_Input_Map | Module_Input_Store | undefined
-            const isParamModule = outModule.inputs.find( i => i.input.case === 'params' ) !== undefined
-
-            /* Check if the output module is based on a map or store to pass the parameters to the right module
-            Example :
-                {
-                    "1": {
-                        ...
-                        "inputs": [
-                            // If 'db_out' is the output module, we need to pass the params to 'map_transfers_from'
-                            { "map": { "moduleName": "map_transfers_from" } }
-                        ],
-                        "name":"db_out",
-                        ...
-                    }
-                }
-            */
-            let paramModule = outputModule
-            if ( !isParamModule && mapOrStoreModule)
-                paramModule = mapOrStoreModule?.moduleName
-
-            substreams.param(outputModuleParams, paramModule)
-        }
-
-        substreams.start()
-    } catch {
-        isSubstreamRunning = false
-    }
+    await substreams.start()
+    isSubstreamRunning = false
 
     return substreams
 }
 
 export async function list(url: string) {
-    const spkg = await download(url)
-    const { modules } = unpack(spkg)
+    const spkg = await readPackage(url)
     const compatible = []
 
-    for ( const {name, output} of modules.modules ) {
+    for ( const {name, output} of getModules(spkg) ) {
         if ( !output ) continue
         logger.info('module', {name, output})
         if ( !MESSAGE_TYPE_NAMES.includes(output.type.replace('proto:', '')) ) continue
