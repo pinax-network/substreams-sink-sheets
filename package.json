@@ -1,6 +1,6 @@
 {
     "name": "substreams-sink-sheets",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "description": "Substreams Google Sheets sink module",
     "type": "module",
     "main": "dist/index.js",
@@ -33,7 +33,9 @@
     "scripts": {
         "prepublishOnly": "npm run build",
         "build": "tsc",
-        "pkg": "ncc build bin/cli.ts -o build && pkg build/index.js"
+        "rollup": "node --max-old-space-size=8192 node_modules/rollup/dist/bin/rollup --config rollup.config.mjs",
+        "linux": "npm run build && npm run rollup && ./scripts/build.linux.sh",
+        "macos": "npm run build && npm run rollup && ./scripts/build.macos.sh"
     },
     "dependencies": {
         "@substreams/node": "0.2.x",
@@ -49,8 +51,10 @@
     "devDependencies": {
         "@tsconfig/recommended": "latest",
         "@types/node": "*",
-        "@vercel/ncc": "0.36.x",
-        "pkg": "5.x",
+        "@rollup/plugin-commonjs": "latest",
+        "@rollup/plugin-json": "latest",
+        "@rollup/plugin-node-resolve": "latest",
+        "rollup": "latest",
         "typescript": "*"
     }
 }

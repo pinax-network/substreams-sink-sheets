@@ -18,6 +18,9 @@ lerna-debug.log*
 # Local scripts
 *.sh
 
+# Allow binary generation scripts
+!scripts/*.sh
+
 # Google Sheets
 credentials.json
 

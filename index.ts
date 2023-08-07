@@ -1,10 +1,10 @@
-import { applyParams, createModuleHashHex, createRegistry, createRequest, getModuleOrThrow, getModules } from '@substreams/core'
+import { applyParams, createRegistry, createRequest, getModuleOrThrow, getModules } from '@substreams/core'
 import { Clock, Module_Input_Store, Module_Input_Map } from '@substreams/core/proto'
 import { readPackage } from '@substreams/manifest'
 import { BlockEmitter, createDefaultTransport } from '@substreams/node'
-import { DatabaseChanges, parseDatabaseChanges, getDatabaseChanges } from './src/database_changes.js'
+import { type DatabaseChanges, parseDatabaseChanges, getDatabaseChanges } from './src/database_changes.js'
 import { createSpreadsheet, formatRow, appendRows, insertHeaderRow } from './src/google.js'
-import { authenticateGoogle, Credentials } from './src/auth.js'
+import { authenticateGoogle, type Credentials } from './src/auth.js'
 import { logger } from './src/logger.js'
 
 export * from './src/google.js'
@@ -56,27 +56,27 @@ export async function run(url: string, spreadsheetId: string, options: {
     const api_token = options.substreamsApiToken ?? process.env[api_token_envvar]
     let columns = options.columns ?? DEFAULT_COLUMNS
 
-    if ( !range ) throw new Error('[range] is required')
-    if ( !outputModule ) throw new Error('[output-module] is required')
-    if ( !spreadsheetId ) throw new Error('[spreadsheet-id] is required')
-    if ( !api_token ) throw new Error('[substreams-api-token] is required')
-    if ( !options.credentials ) throw new Error('[credentials] is required')
+    if (!range) throw new Error('[range] is required')
+    if (!outputModule) throw new Error('[output-module] is required')
+    if (!spreadsheetId) throw new Error('[spreadsheet-id] is required')
+    if (!api_token) throw new Error('[substreams-api-token] is required')
+    if (!options.credentials) throw new Error('[credentials] is required')
 
     // delay before start
-    if ( options.delayBeforeStart ) await timeout(Number(options.delayBeforeStart) * 1000);
-    
+    if (options.delayBeforeStart) await timeout(Number(options.delayBeforeStart) * 1000);
+
     // Authenticate Google Sheets
     const sheets = await authenticateGoogle(options.credentials)
 
     // Download Substream from URL or IPFS
     const spkg = await readPackage(url)
 
-    if ( outputModuleParams !== '' ) {
+    if (outputModuleParams !== '') {
         const outModule = getModuleOrThrow(getModules(spkg), outputModule)// Object.values(spkg.modules.modules).find( m => m.name === outputModule )
         //if ( !outModule ) throw new Error('Could not find outputModule in package')
 
-        const mapOrStoreInput = outModule.inputs.find( i => i.input.case === 'map' || i.input.case === 'store' )?.input.value as Module_Input_Map | Module_Input_Store | undefined
-        const isParamModule = outModule.inputs.find( i => i.input.case === 'params' ) !== undefined
+        const mapOrStoreInput = outModule.inputs.find(i => i.input.case === 'map' || i.input.case === 'store')?.input.value as Module_Input_Map | Module_Input_Store | undefined
+        const isParamModule = outModule.inputs.find(i => i.input.case === 'params') !== undefined
 
         /* Check if the output module is based on a map or store to pass the parameters to the right module
         Example :
@@ -93,10 +93,10 @@ export async function run(url: string, spreadsheetId: string, options: {
             }
         */
         let paramModule = outputModule
-        if ( !isParamModule && mapOrStoreInput)
+        if (!isParamModule && mapOrStoreInput)
             paramModule = mapOrStoreInput?.moduleName
 
-        if ( !spkg.modules?.modules )
+        if (!spkg.modules?.modules)
             throw new Error('No modules found in substream package !')
 
         applyParams([`${paramModule}=${outputModuleParams}`], spkg.modules.modules)
@@ -122,17 +122,17 @@ export async function run(url: string, spreadsheetId: string, options: {
     let isSubstreamRunning = true; // Semi-colon important here to not mess up the following declaration
 
     (async function pushToSheet() {
-        if ( rows.length ) {
+        if (rows.length) {
             appendRows(sheets, spreadsheetId, range, rows)
-            logger.info('Pushed rows to Google Sheet', {spreadsheetId, range, rows: rows.length})
+            logger.info('Pushed rows to Google Sheet', { spreadsheetId, range, rows: rows.length })
             rows.length = 0 // Reset the rows queue -> Is there potential race with `substream.on` event (= loss of data) ?
         }
 
-        if ( isSubstreamRunning ) {
+        if (isSubstreamRunning) {
             setTimeout(pushToSheet, TIMEOUT) // TODO: More robust in case of failed push
-        } else if ( addHeaderRow ) {
-            if ( await insertHeaderRow(sheets, spreadsheetId, range, columns) )
-                logger.info('insertHeaderRow', {columns, spreadsheetId})
+        } else if (addHeaderRow) {
+            if (await insertHeaderRow(sheets, spreadsheetId, range, columns))
+                logger.info('insertHeaderRow', { columns, spreadsheetId })
         }
     })()
 
@@ -144,12 +144,12 @@ export async function run(url: string, spreadsheetId: string, options: {
         const decoded = DatabaseChanges.fromJson(message) as DatabaseChanges
         const databaseChanges = parseDatabaseChanges(decoded, clock)
 
-        if ( databaseChanges.length ) {
+        if (databaseChanges.length) {
             // If no columns specified, determine from the returned data as we'll include all fields
-            if ( !columns.length ) columns = [...Object.keys(databaseChanges[0]).values()]
+            if (!columns.length) columns = [...Object.keys(databaseChanges[0]).values()]
             rows.push(...databaseChanges.map(changes => formatRow(changes, columns)))
 
-            logger.info('Rows added to queue', {spreadsheetId, range, rows: rows.length})
+            logger.info('Rows added to queue', { spreadsheetId, range, rows: rows.length })
         }
     })
 
@@ -172,10 +172,10 @@ export async function list(url: string) {
     const spkg = await readPackage(url)
     const compatible = []
 
-    for ( const {name, output} of getModules(spkg) ) {
-        if ( !output ) continue
-        logger.info('module', {name, output})
-        if ( !MESSAGE_TYPE_NAMES.includes(output.type.replace('proto:', '')) ) continue
+    for (const { name, output } of getModules(spkg)) {
+        if (!output) continue
+        logger.info('module', { name, output })
+        if (!MESSAGE_TYPE_NAMES.includes(output.type.replace('proto:', ''))) continue
         compatible.push(name)
     }
 
@@ -188,7 +188,7 @@ export async function create(credentials: Credentials) {
 
     // Create spreadsheet
     const spreadsheetId = await createSpreadsheet(sheets, 'substreams-sink-sheets by Pinax')
-    if ( !spreadsheetId ) throw new Error('Could not create spreadsheet')
+    if (!spreadsheetId) throw new Error('Could not create spreadsheet')
 
     return spreadsheetId
 }
