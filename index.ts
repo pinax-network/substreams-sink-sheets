@@ -73,7 +73,6 @@ export async function run(url: string, spreadsheetId: string, options: {
 
     if (outputModuleParams !== '') {
         const outModule = getModuleOrThrow(getModules(spkg), outputModule)// Object.values(spkg.modules.modules).find( m => m.name === outputModule )
-        //if ( !outModule ) throw new Error('Could not find outputModule in package')
 
         const mapOrStoreInput = outModule.inputs.find(i => i.input.case === 'map' || i.input.case === 'store')?.input.value as Module_Input_Map | Module_Input_Store | undefined
         const isParamModule = outModule.inputs.find(i => i.input.case === 'params') !== undefined
@@ -137,15 +136,11 @@ export async function run(url: string, spreadsheetId: string, options: {
     })()
 
     substreams.on('anyMessage', async (message, cursor: string, clock: Clock) => {
-        // Handle map operations, type URL is in format `type.googleapis.com/xxx`
-        //if ( !MESSAGE_TYPE_NAMES.some(( message: string ) => out.output.mapOutput?.typeUrl.match(message)) ) return
-
-        //const decoded = DatabaseChanges.fromBinary(out.output.mapOutput?.value) as DatabaseChanges
         const decoded = DatabaseChanges.fromJson(message) as DatabaseChanges
         const databaseChanges = parseDatabaseChanges(decoded, clock)
 
         if (databaseChanges.length) {
-            // If no columns specified, determine from the returned data as we'll include all fields
+            // If no columns specified, determine them from the returned object keys to include all fields
             if (!columns.length) columns = [...Object.keys(databaseChanges[0]).values()]
             rows.push(...databaseChanges.map(changes => formatRow(changes, columns)))
 
