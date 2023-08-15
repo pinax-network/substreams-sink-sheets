@@ -63,7 +63,7 @@ export async function insertRows(sheets: Sheets, spreadsheetId: string, range: {
                         values: [
                             row.map(v => ({
                                 userEnteredValue: {
-                                    stringValue: v 
+                                    stringValue: v
                                 }
                             }))
                         ]})

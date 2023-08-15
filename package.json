@@ -29,7 +29,7 @@
             "email": "denis@pinax.network"
         }
     ],
-    "license": "MIT OR Apache-2.0",
+    "license": "MIT",
     "scripts": {
         "prepublishOnly": "npm run build",
         "build": "tsc",
@@ -38,23 +38,17 @@
         "macos": "npm run build && npm run rollup && ./scripts/build.macos.sh"
     },
     "dependencies": {
-        "@substreams/node": "0.2.x",
-        "@substreams/core": "0.1.x",
-        "@substreams/manifest": "0.0.x",
-        "commander": "10.x",
-        "dotenv": "16.x",
         "googleapis": "112.x",
-        "p-queue": "6.x",
-        "substreams-sink": "^0.9.2",
-        "winston": "3.x"
+        "p-queue": "latest",
+        "substreams-sink": "^0.9.2"
     },
     "devDependencies": {
-        "@tsconfig/recommended": "latest",
-        "@types/node": "*",
         "@rollup/plugin-commonjs": "latest",
         "@rollup/plugin-json": "latest",
         "@rollup/plugin-node-resolve": "latest",
+        "@tsconfig/recommended": "latest",
+        "@types/node": "latest",
         "rollup": "latest",
-        "typescript": "*"
+        "typescript": "latest"
     }
 }

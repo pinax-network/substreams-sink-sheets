@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { type Credentials, type ServiceCredentials } from '../src/auth.js'
+import type { ActionOptions } from './cli.js'
 
 export async function parseServiceCredentials(json_file_url: string): Promise<ServiceCredentials> {
     // handle as URL
@@ -18,7 +19,7 @@ export async function parseServiceCredentials(json_file_url: string): Promise<Se
     }
 }
 
-export async function handleCredentials(options: any): Promise<Credentials> {
+export async function handleCredentials(options: ActionOptions): Promise<Credentials> {
     let credentials: Credentials = {
         access_token: options.accessToken,
         refresh_token: options.refreshToken,
