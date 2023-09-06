@@ -45,7 +45,7 @@ export async function run(url: string, spreadsheetId: string, options: {
     addHeaderRow?: boolean,
     range?: string,
     credentials?: Credentials,
-} = {}) {
+} = {}, setup_callback?: (substreams: BlockEmitter) => any) {
     // User params
     const outputModule = options.outputModule ?? DEFAULT_OUTPUT_MODULE
     const outputModuleParams = options.outputModuleParams ?? DEFAULT_OUTPUT_MODULE_PARAMS
@@ -147,6 +147,9 @@ export async function run(url: string, spreadsheetId: string, options: {
             logger.info('Rows added to queue', { spreadsheetId, range, rows: rows.length })
         }
     })
+
+    if (setup_callback) // Any additional setup needed on the `BlockEmitter` object is made here (e.g. update status on `block` events).
+        setup_callback(substreams)
 
     // start streaming Substream
     logger.info('start', {
